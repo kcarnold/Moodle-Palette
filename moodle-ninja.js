@@ -1,0 +1,238 @@
+// ==UserScript==
+// @name         Moodle Ninja
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  try to take over the world!
+// @author       You
+// @match        https://moodle.calvin.edu/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=calvin.edu
+// @grant        none
+// @run-at document-idle
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    let searchParams = new URLSearchParams(document.location.search);
+    let courseId;
+    let activityDirectory = [];
+
+    function getCourseId() {
+        let dataResult = document.querySelector('[data-courseid]');
+        if (dataResult) {
+            return dataResult.getAttribute('data-courseid');
+        }
+        // Find the course id by looking for a course nav link. (TODO: this feels fragile.)
+        return new URL(document.querySelector('header a[href*="/course/view.php"]').href).searchParams.get('id');
+    }
+
+    if (window.location.pathname === '/course/view.php') {
+        // Capture the activities for this course.
+        courseId = searchParams.get('id');
+
+        activityDirectory = [...document.querySelectorAll('li.section')].map(section => {
+            let secId = section.getAttribute('id');
+            let secTitle = document.getElementById(section.getAttribute('aria-labeled-by')).textContent;
+            let activities = [...section.querySelectorAll('ul.section > li.activity .activityinstance')].map(activityInstance => {
+                // FIXME: this breaks in edit mode, because there's an extra "inplaceeditable" span wrapping the name.
+                if (!activityInstance) return;
+                let titleElt = activityInstance.querySelector('.instancename');
+                if (!titleElt) {
+                    console.warn("OOPS, missing title", activityInstance);
+                    alert("Missing title for activity in " + secTitle);
+                    // intentionally crash rather than give corrupt data.
+                }
+                let title = titleElt.firstChild.textContent;
+                let linkNode = activityInstance.querySelector(':scope > a');
+                if (!linkNode) {
+                    console.warn("OOPS, missing link", activityInstance, title);
+                }
+                let url = linkNode.getAttribute('href');
+                return {title, url};
+            });
+            return {secId, secTitle, activities};
+        });
+        localStorage[`activities-${courseId}`] = JSON.stringify(activityDirectory);
+    } else {
+        // Load the stored activities for this course.
+        courseId = getCourseId();
+        let stored = localStorage[`activities-${courseId}`];
+        if (stored) {
+            activityDirectory = JSON.parse(stored);
+        }
+    }
+
+    // https://github.com/ssleptsov/ninja-keys
+    let tag = document.createElement('script');
+    tag.setAttribute('type', 'module');
+    tag.setAttribute('src', "https://unpkg.com/ninja-keys?module");
+    document.body.appendChild(tag);
+
+    let ninja = document.createElement('ninja-keys');
+    ninja.setAttribute('openHotkey', "cmd+p,ctrl+p");
+    document.body.appendChild(ninja);
+
+
+    // Create the go-to-activity action hierarchy.
+    function activityHandler(item) {
+        window.location = item.url;
+    }
+
+    let activityItem = {id: "Act", title: "Activity", children: []};
+    let ninjaData = [activityItem];
+    activityDirectory.forEach(section => {
+        let secId = section.secId;
+        let children = section.activities.map(({title, url}) => ({
+            id: title, title: title,
+            parent: secId,
+            url: url, handler: activityHandler
+        }));
+        activityItem.children.push(section.secId);
+        ninjaData.push({id: section.secId, title: section.secTitle, parent: "Act", children: children.map(x => x.id)});
+        children.forEach(child => {ninjaData.push(child);}); // is there an .extend for arrays?
+    });
+
+    // I think this is broken somehow: https://github.com/ssleptsov/ninja-keys/blob/main/src/ninja-keys.ts#L192
+    /**    ninja.data = [
+        {
+            id: "Act",
+            title: "Activity",
+            children: activityDirectory.map(({secTitle, activities}) => ({
+                id: secTitle,
+                title: secTitle,
+                children: activities.map(({title, url}) => ({id: title, title: title, url: url, handler: activityHandler}))
+            }))
+        }
+    ];*/
+
+
+    /* TODO: Merge quiz ninja into here */
+
+    /* Assignment */
+    // TODO:
+    // Download all: https://moodle.calvin.edu/mod/assign/view.php?id=1517797&action=downloadall
+
+    /* Convert-assignment-thing */
+    ninjaData.push({
+        id: "Submission",
+        title: "Submission",
+        children: ["Show HTML", "Save-Next", "Reset"]
+    });
+
+    async function showRaw(href) {
+        let panel = document.querySelector('[data-region="review-panel"]');
+        panel.innerHTML = '';
+        let response = await fetch(href);
+        //let responseText = await response.text();
+        let responseBlob = await response.blob();
+        if (responseBlob.type === "application/octet-stream") {
+            // Avoid downloading it.
+            responseBlob = responseBlob.slice(0, responseBlob.size, "text/plain");
+        }
+        console.log(responseBlob.type);
+        let iframe = document.createElement("iframe");
+        //iframe.srcdoc = responseText;
+        iframe.src = URL.createObjectURL(responseBlob);
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        panel.appendChild(iframe);
+    }
+
+    ninjaData.push({
+        id: "Show HTML",
+        title: "Show HTML",
+        parent: "Submission",
+        //hotkey: "cmd-opt-h",
+        handler: () => {
+            let tags = document.querySelectorAll('.fileuploadsubmission a')
+            tags.forEach(tag => {
+                tag.parentNode.addEventListener('click', () => showRaw(tag.href), false);
+            });
+            showRaw(tags[0].href)
+        }
+    });
+    ninjaData.push({
+        id: "Save-Next",
+        title: "Save and Show Next",
+        //hotkey: "cmd-opt-s",
+        parent: "Submission",
+        handler: () => { document.querySelector('[name="saveandshownext"]').click(); }
+    });
+    ninjaData.push({
+        id: "Reset",
+        title: "Reset Grading Form",
+        parent: "Submission",
+        handler: () => { window.$(document).trigger('reset'); }
+    });
+
+    /**
+
+    observer.disconnect();
+function mutCallback(mutationList, observer) {
+  mutationList.forEach(mutation => {
+    if (mutation.type !== 'childList') return;
+    console.log(mutation.addedNodes, mutation.removedNodes);
+    // how about...
+    mutation.addedNodes.forEach(node => {
+      if (node.matches && node.matches(selector)) { attachFileUploadHandler(
+  })
+}
+observer = new MutationObserver(mutCallback)
+observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
+*/
+
+    /* Gradebook setup */
+    ninjaData.push({
+        id: "GradebookSetup",
+        title: "Gradebook Setup",
+        children: ["UnhideLabels"]
+    });
+    ninjaData.push({
+        id: "UnhideLabels",
+        parent: "GradebookSetup",
+        title: "Unhide checkbox labels",
+        handler: () => {
+            let selector = ".accesshide";
+            let column = prompt("Which column?", "4");
+            if (column) {
+                selector = `.c${column} ${selector}`;
+            }
+            document.getElementById('grade_edit_tree_table').querySelectorAll(selector).forEach(x => x.classList.remove('accesshide'));
+        }
+    });
+
+    function addTree(parent, children) {
+        if (!parent.children) parent.children = [];
+        ninjaData.push(parent);
+        children.forEach(c => {
+            if (!c.id) c.id = c.title;
+            c.parent = parent.id;
+            parent.children.push(c.id);
+            ninjaData.push(c);
+        });
+    }
+
+    /* The silly gears... */
+    let actionMenu = [...document.querySelectorAll('#page-content [data-enhance="moodle-core-actionmenu"] a[role="menuitem"]')].map(x => ({title: x.textContent, url: x.getAttribute("href")}));
+    if (actionMenu.length > 0) {
+        addTree(
+            {id: "MenuActions", title: "Gear"},
+            actionMenu.map(m => ({id: "Gear-" + m.title, "title": m.title, url: m.url, handler: activityHandler }))
+        );
+    }
+
+    ninja.data = ninjaData;
+    console.log(ninja.data);
+
+
+    // Hack: group selection box bigger:
+    function hackGroupSelect() {
+        let elt = document.getElementById('addselect');
+        if (!elt) return;
+        elt.setAttribute('size', '40');
+        elt.querySelectorAll("option").forEach(x => {
+            if (x.textContent.match(/\(0\)$/)) x.style.color = 'red'
+        });
+    }
+    hackGroupSelect();
+})();
