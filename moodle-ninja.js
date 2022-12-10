@@ -34,7 +34,6 @@
             let secId = section.getAttribute('id');
             let secTitle = document.getElementById(section.getAttribute('aria-labeled-by')).textContent;
             let activities = [...section.querySelectorAll('ul.section > li.activity .activityinstance')].map(activityInstance => {
-                // FIXME: this breaks in edit mode, because there's an extra "inplaceeditable" span wrapping the name.
                 if (!activityInstance) return;
                 let titleElt = activityInstance.querySelector('.instancename');
                 if (!titleElt) {
@@ -43,7 +42,7 @@
                     // intentionally crash rather than give corrupt data.
                 }
                 let title = titleElt.firstChild.textContent;
-                let linkNode = activityInstance.querySelector(':scope > a');
+                let linkNode = titleElt.closest('a');
                 if (!linkNode) {
                     console.warn("OOPS, missing link", activityInstance, title);
                 }
