@@ -75,6 +75,11 @@
             handler: () => { goQuizReportSection('statistics'); }
         },
         {
+            id: "AddOverride",
+            title: "Add User Override",
+            handler: () => { go('/mod/quiz/overrideedit.php', `?action=adduser&cmid=${quizId}`); }
+        },
+        {
             id: "QBank",
             title: "Question Bank",
             handler: () => { go("/question/edit.php", `?cmid=${quizId}`); }
@@ -101,32 +106,41 @@
 
     ];
 
-if (false) {
-    // Add overrides in bulk. TODO: parameterize the user id.
-    async function temp() {
+    // Autofocus search box.
+    function autofocusSearchBox() {
+        let elt = document.querySelector('#id_override input[data-fieldtype="autocomplete"]');
+        console.log(elt);
+        if (elt) elt.focus();
+    }
+    setTimeout(autofocusSearchBox, 500);
 
-    for (let quizId of ["1515007", "1491733", "1528545", "1491830", "1491846"]) {
-    console.log(quizId);
-    let response = await fetch("https://moodle.calvin.edu/mod/quiz/overrideedit.php", {
-        "credentials": "include",
-        "headers": {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Upgrade-Insecure-Requests": "1",
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-User": "?1"
-        },
-        "referrer": `https://moodle.calvin.edu/mod/quiz/overrideedit.php?action=adduser&cmid=${quizId}`,
-        "body": `action=adduser&cmid=${quizId}&sesskey=7lYGVOE5k2&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=25090&password=&timeclose%5Bday%5D=9&timeclose%5Bmonth%5D=12&timeclose%5Byear%5D=2022&timeclose%5Bhour%5D=23&timeclose%5Bminute%5D=59&timeclose%5Benabled%5D=1&timelimit%5Bnumber%5D=40&timelimit%5Btimeunit%5D=60&timelimit%5Benabled%5D=1&attempts=1&submitbutton=Save`,
-        "method": "POST",
-        "mode": "cors"
-    });
-    console.log(response)
-}}
 
-}
+    if (false) {
+        // Add overrides in bulk. TODO: parameterize the user id.
+        async function temp() {
+
+            for (let quizId of ["1515007", "1491733", "1528545", "1491830", "1491846"]) {
+                console.log(quizId);
+                let response = await fetch("https://moodle.calvin.edu/mod/quiz/overrideedit.php", {
+                    "credentials": "include",
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                        "Accept-Language": "en-US,en;q=0.5",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Upgrade-Insecure-Requests": "1",
+                        "Sec-Fetch-Dest": "document",
+                        "Sec-Fetch-Mode": "navigate",
+                        "Sec-Fetch-Site": "same-origin",
+                        "Sec-Fetch-User": "?1"
+                    },
+                    "referrer": `https://moodle.calvin.edu/mod/quiz/overrideedit.php?action=adduser&cmid=${quizId}`,
+                    "body": `action=adduser&cmid=${quizId}&sesskey=7lYGVOE5k2&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=25090&password=&timeclose%5Bday%5D=9&timeclose%5Bmonth%5D=12&timeclose%5Byear%5D=2022&timeclose%5Bhour%5D=23&timeclose%5Bminute%5D=59&timeclose%5Benabled%5D=1&timelimit%5Bnumber%5D=40&timelimit%5Btimeunit%5D=60&timelimit%5Benabled%5D=1&attempts=1&submitbutton=Save`,
+                    "method": "POST",
+                    "mode": "cors"
+                });
+                console.log(response)
+            }}
+
+    }
 })();
