@@ -112,6 +112,18 @@
         }
     ];*/
 
+/* Course blocks */
+    ninjaData.push({
+        id: "CourseBlocks",
+        title: "Course Blocks Open-Close",
+        handler: () => {
+            let btn = document.getElementById('blocksliderbutton');
+            if (btn) {
+                btn.click();
+                btn.scrollIntoView();
+            }
+        }
+    });
 
     /* TODO: Merge quiz ninja into here */
 
