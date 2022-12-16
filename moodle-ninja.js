@@ -68,6 +68,7 @@
     document.body.appendChild(tag);
 
     let ninja = document.createElement('ninja-keys');
+    ninja.setAttribute('style', '--ninja-z-index: 102;'); // Get it in front of the course blocks.
     ninja.setAttribute('openHotkey', "cmd+p,ctrl+p");
     document.body.appendChild(ninja);
 
