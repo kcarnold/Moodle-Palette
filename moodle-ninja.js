@@ -254,4 +254,14 @@ observer.observe(document.querySelector('[data-region="grade-panel"]'), {childLi
         });
     }
     hackGroupSelect();
+
+    // Hack: double-click on review options to set all.
+    function hackReviewOptions() {
+        document.querySelectorAll('#id_reviewoptionshdr [data-groupname]').forEach(gg => {
+            gg.querySelector('p').addEventListener('dblclick', () => {
+                gg.querySelectorAll('fieldset input[type="checkbox"]').forEach(x => {x.click();})
+            }, false);
+        });
+    }
+    hackReviewOptions();
 })();
