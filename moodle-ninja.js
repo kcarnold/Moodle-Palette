@@ -77,8 +77,15 @@
         window.location = item.url;
     }
 
+    let ninjaData = [];
+    ninjaData.push({
+        id: "Home",
+        title: "Course Home",
+        handler: () => {window.location = `/course/view.php?id=${courseId}`; }
+    });
+
     let activityItem = {id: "Act", title: "Activity", children: []};
-    let ninjaData = [activityItem];
+    ninjaData.push(activityItem);
     activityDirectory.forEach(section => {
         let secId = section.secId;
         let children = section.activities.map(({title, url}) => ({
