@@ -163,11 +163,8 @@
         parent: "Submission",
         //hotkey: "cmd-opt-h",
         handler: () => {
-            let tags = document.querySelectorAll('.fileuploadsubmission a')
-            tags.forEach(tag => {
-                tag.parentNode.addEventListener('click', () => showRaw(tag.href), false);
-            });
-            showRaw(tags[0].href)
+            let observer = new MutationObserver(mutCallback)
+            observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
         }
     });
     ninjaData.push({
@@ -207,8 +204,6 @@
             })
         })
     }
-    let observer = new MutationObserver(mutCallback)
-    observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
 
     /* Gradebook setup */
     ninjaData.push({
