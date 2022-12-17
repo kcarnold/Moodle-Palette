@@ -112,7 +112,7 @@
         }
     ];*/
 
-/* Course blocks */
+    /* Course blocks */
     ninjaData.push({
         id: "CourseBlocks",
         title: "Course Blocks Open-Close",
@@ -148,7 +148,7 @@
             // Avoid downloading it.
             responseBlob = responseBlob.slice(0, responseBlob.size, "text/plain");
         }
-        console.log(responseBlob.type);
+        //console.log(responseBlob.type);
         let iframe = document.createElement("iframe");
         //iframe.srcdoc = responseText;
         iframe.src = URL.createObjectURL(responseBlob);
@@ -184,21 +184,31 @@
         handler: () => { window.$(document).trigger('reset'); }
     });
 
-    /**
+    function mutCallback(mutationList, observer) {
+        let shownTag = null;
+        mutationList.forEach(mutation => {
+            if (mutation.type !== 'childList') return;
+            //console.log(mutation.addedNodes, mutation.removedNodes);
+            mutation.addedNodes.forEach(node => {
+                if (!node.querySelectorAll) { return; }
+                node.querySelectorAll('.fileuploadsubmission a').forEach(tag => {
+                    //console.log("Got node", m, "from", node);
+                    // Be careful: we seem to get addedNodes from several different parent nodes (why??),
+                    // so abort if we've already handled this one.
+                    if (tag.hooked) return;
+                    tag.hooked = true;
+                    tag.parentNode.addEventListener('click', () => showRaw(tag.href), false);
+                    if (!shownTag) {
+                        showRaw(tag.href)
+                        shownTag = tag;
+                    }
 
-    observer.disconnect();
-function mutCallback(mutationList, observer) {
-  mutationList.forEach(mutation => {
-    if (mutation.type !== 'childList') return;
-    console.log(mutation.addedNodes, mutation.removedNodes);
-    // how about...
-    mutation.addedNodes.forEach(node => {
-      if (node.matches && node.matches(selector)) { attachFileUploadHandler(
-  })
-}
-observer = new MutationObserver(mutCallback)
-observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
-*/
+                });
+            })
+        })
+    }
+    let observer = new MutationObserver(mutCallback)
+    observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
 
     /* Gradebook setup */
     ninjaData.push({
