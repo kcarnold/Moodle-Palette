@@ -158,13 +158,14 @@
     }
 
     ninjaData.push({
-        id: "Show HTML",
-        title: "Show HTML",
+        id: "Show File Uploads",
+        title: "Show File Uploads",
         parent: "Submission",
         //hotkey: "cmd-opt-h",
         handler: () => {
             let observer = new MutationObserver(mutCallback)
             observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
+            hookFileSubmissions(document.body);
         }
     });
     ninjaData.push({
@@ -181,26 +182,31 @@
         handler: () => { window.$(document).trigger('reset'); }
     });
 
-    function mutCallback(mutationList, observer) {
+
+    function hookFileSubmissions(parentNode) {
         let shownTag = null;
+        parentNode.querySelectorAll('.fileuploadsubmission a').forEach(tag => {
+            //console.log("Got node", m, "from", parentNode);
+            // Be careful: we seem to get addedNodes from several different parent nodes (why??),
+            // so abort if we've already handled this one.
+            if (tag.hooked) return;
+            tag.hooked = true;
+            tag.parentNode.addEventListener('click', () => showRaw(tag.href), false);
+            if (!shownTag) {
+                showRaw(tag.href)
+                shownTag = tag;
+            }
+
+        });
+    }
+
+    function mutCallback(mutationList, observer) {
         mutationList.forEach(mutation => {
             if (mutation.type !== 'childList') return;
             //console.log(mutation.addedNodes, mutation.removedNodes);
             mutation.addedNodes.forEach(node => {
                 if (!node.querySelectorAll) { return; }
-                node.querySelectorAll('.fileuploadsubmission a').forEach(tag => {
-                    //console.log("Got node", m, "from", node);
-                    // Be careful: we seem to get addedNodes from several different parent nodes (why??),
-                    // so abort if we've already handled this one.
-                    if (tag.hooked) return;
-                    tag.hooked = true;
-                    tag.parentNode.addEventListener('click', () => showRaw(tag.href), false);
-                    if (!shownTag) {
-                        showRaw(tag.href)
-                        shownTag = tag;
-                    }
-
-                });
+                hookFileSubmissions(node);
             })
         })
     }
