@@ -16,6 +16,7 @@
     // 0-9: select the corresponding rubric item.
     // >  : Save and Show Next
     // n  : Toggle sending notifications
+    // f  : Give full credit
     // R  : Reset
     // G  : filter to Requires Grading
     let criterionIdx = 0;
@@ -33,6 +34,10 @@
             let elt = document.querySelector('[data-region="configure-filters"] [name="filter"]');
             elt.value = 'requiregrading';
             elt.closest('select').dispatchEvent(new Event("change", {bubbles: true}));
+        } else if (event.key === 'f') {
+            // give full credit.
+            let outOf = document.querySelector('[for="id_grade"]').textContent.match(/Grade out of (\d+)/)[1];
+            document.getElementById("id_grade").value = outOf;
         } else {
             // Handle rubric stuff
             let rubric = document.querySelector('[aria-label="Rubric"]');
