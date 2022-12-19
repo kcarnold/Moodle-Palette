@@ -22,18 +22,7 @@
     document.addEventListener('keydown', (event) => {
         if (event.repeat || event.defaultPrevented) return;
         if (event.target.tagName !== "BODY" && event.target.getAttribute('role') !== "button") return; // Ignore key presses in input boxes and contenteditable divs. Links are ok.
-        let rubric = document.querySelector('[aria-label="Rubric"]');
-        if (!rubric) return;
-        let criteria = [...rubric.querySelectorAll('tr.criterion')];
-        let criteriaOpts = [...criteria[criterionIdx].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
-        console.log(event.key);
-        if (event.key >= '0' && event.key <= '9') {
-            let idx = +event.key;
-            if (idx < criteriaOpts.length) {
-                criteriaOpts[idx].click();
-                criterionIdx = (criterionIdx + 1) % criteria.length;
-            }
-        } else if (event.key === '>') {
+        if (event.key === '>') {
             document.querySelector('[name="saveandshownext"]').click();
         } else if (event.key === 'n') {
             document.querySelector('[data-region="grading-actions-form"] [name="sendstudentnotifications"]').click();
@@ -44,6 +33,20 @@
             let elt = document.querySelector('[data-region="configure-filters"] [name="filter"]');
             elt.value = 'requiregrading';
             elt.closest('select').dispatchEvent(new Event("change", {bubbles: true}));
+        } else {
+            // Handle rubric stuff
+            let rubric = document.querySelector('[aria-label="Rubric"]');
+            if (!rubric) return;
+            let criteria = [...rubric.querySelectorAll('tr.criterion')];
+            let criteriaOpts = [...criteria[criterionIdx].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
+            console.log(event.key);
+            if (event.key >= '0' && event.key <= '9') {
+                let idx = +event.key;
+                if (idx < criteriaOpts.length) {
+                    criteriaOpts[idx].click();
+                    criterionIdx = (criterionIdx + 1) % criteria.length;
+                }
+            }
         }
     }, false);
 
