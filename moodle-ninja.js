@@ -243,7 +243,7 @@
     }
 
     /* The silly gears... */
-    let actionMenu = [...document.querySelectorAll('#page-content [data-enhance="moodle-core-actionmenu"] a[role="menuitem"]')].map(x => ({title: x.textContent, url: x.getAttribute("href")}));
+    let actionMenu = [...document.querySelectorAll('#region-main-settings-menu [data-enhance="moodle-core-actionmenu"] a[role="menuitem"]')].map(x => ({title: x.textContent, url: x.getAttribute("href")}));
     if (actionMenu.length > 0) {
         addTree(
             {id: "MenuActions", title: "Gear"},
