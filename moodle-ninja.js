@@ -148,10 +148,17 @@
             // Avoid downloading it.
             responseBlob = responseBlob.slice(0, responseBlob.size, "text/plain");
         }
-        //console.log(responseBlob.type);
         let iframe = document.createElement("iframe");
-        //iframe.srcdoc = responseText;
-        iframe.src = URL.createObjectURL(responseBlob);
+
+        const whitelist = ["text/plain", "text/html"];
+        const responseType = responseBlob.type.split(';')[0]; // split off ;charset=utf-8 etc.
+        if (whitelist.indexOf(responseType) === -1) {
+            iframe.srcdoc = `Click the file name to download it. (Not displaying becaause the response type was ${responseBlob.type}.)`;
+        } else {
+            //iframe.srcdoc = responseText;
+            // FIXME: should revoke this object URL sometime to avoid memory leaks.
+            iframe.src = URL.createObjectURL(responseBlob);
+        }
         iframe.style.width = "100%";
         iframe.style.height = "100%";
         panel.appendChild(iframe);
