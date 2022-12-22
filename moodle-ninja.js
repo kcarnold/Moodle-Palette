@@ -151,9 +151,9 @@
         let iframe = document.createElement("iframe");
         iframe.setAttribute("sandbox", ""); // Applies all restrictions: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
 
-        const whitelist = ["text/plain", "text/html"];
+        const allowedContentTypes = ["text/plain", "text/html", "application/pdf"];
         const responseType = responseBlob.type.split(';')[0]; // split off ;charset=utf-8 etc.
-        if (whitelist.indexOf(responseType) === -1) {
+        if (allowedContentTypes.indexOf(responseType) === -1) {
             iframe.srcdoc = `Click the file name to download it. (Not displaying becaause the response type was ${responseBlob.type}.)`;
         } else {
             //iframe.srcdoc = responseText;
