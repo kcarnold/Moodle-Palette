@@ -270,6 +270,19 @@
     ninja.data = ninjaData;
     console.log(ninja.data);
 
+    if (window.location.pathname === '/grade/report/singleview/index.php') {
+        addTree(
+            {id: "Grading", title: "Grading"},
+            [
+                {
+                    title: "Show full feedback",
+                    handler: () => {
+                        document.querySelectorAll('input[id^=feedback][disabled]').forEach(x => {x.closest('td').style.textAlign = "left"; x.outerHTML = x.value; } )
+                    }
+                }
+            ]
+        );
+    }
 
     // Hack: group selection box bigger:
     function hackGroupSelect() {
