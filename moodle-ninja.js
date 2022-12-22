@@ -190,6 +190,14 @@
         handler: () => { window.$(document).trigger('reset'); }
     });
 
+    function showAndHighlightRaw(tag) {
+        showRaw(tag.href);
+        document.querySelectorAll('.fileuploadsubmission a').forEach(x => {
+            x.style.fontWeight = 'normal';
+        })
+        tag.style.fontWeight = 'bold';
+    }
+
 
     function hookFileSubmissions(parentNode) {
         let shownTag = null;
@@ -199,9 +207,9 @@
             // so abort if we've already handled this one.
             if (tag.hooked) return;
             tag.hooked = true;
-            tag.parentNode.addEventListener('click', () => showRaw(tag.href), false);
+            tag.parentNode.addEventListener('click', () => showAndHighlightRaw(tag), false);
             if (!shownTag) {
-                showRaw(tag.href)
+                showAndHighlightRaw(tag)
                 shownTag = tag;
             }
 
