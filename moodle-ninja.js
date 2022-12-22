@@ -149,6 +149,7 @@
             responseBlob = responseBlob.slice(0, responseBlob.size, "text/plain");
         }
         let iframe = document.createElement("iframe");
+        iframe.setAttribute("sandbox", ""); // Applies all restrictions: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
 
         const whitelist = ["text/plain", "text/html"];
         const responseType = responseBlob.type.split(';')[0]; // split off ;charset=utf-8 etc.
