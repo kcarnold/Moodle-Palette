@@ -135,7 +135,7 @@
     ninjaData.push({
         id: "Submission",
         title: "Submission",
-        children: ["Show HTML", "Save-Next", "Reset"]
+        children: ["Show File Uploads", "Save-Next", "Reset"]
     });
 
     async function showRaw(href) {
