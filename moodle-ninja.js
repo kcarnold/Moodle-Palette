@@ -13,6 +13,17 @@
 (function() {
     'use strict';
 
+    function addTree(parent, children) {
+        if (!parent.children) parent.children = [];
+        ninjaData.push(parent);
+        children.forEach(c => {
+            if (!c.id) c.id = c.title;
+            c.parent = parent.id;
+            parent.children.push(c.id);
+            ninjaData.push(c);
+        });
+    }
+
     let searchParams = new URLSearchParams(document.location.search);
     let courseId;
     let activityDirectory = [];
@@ -79,11 +90,17 @@
     }
 
     let ninjaData = [];
-    ninjaData.push({
-        id: "Home",
-        title: "Course Home",
-        handler: () => {window.location = `/course/view.php?id=${courseId}`; }
-    });
+    addTree(
+        {id: "Sections", title: "Course Sections"},
+        [
+            {title: "Course Home", handler: () => {window.location = `/course/view.php?id=${courseId}&perpage=5000`; }},
+            {
+                id: "Participants",
+                title: "Course Participants",
+                handler: () => {window.location = `/user/index.php?id=${courseId}`; }
+            },
+            {title: "Gradebook", handler: () => {window.location = `/grade/report/index.php?id=${courseId}`; }}
+        ]);
 
     let activityItem = {id: "Act", title: "Activity", children: []};
     ninjaData.push(activityItem);
@@ -246,17 +263,6 @@
             document.getElementById('grade_edit_tree_table').querySelectorAll(selector).forEach(x => x.classList.remove('accesshide'));
         }
     });
-
-    function addTree(parent, children) {
-        if (!parent.children) parent.children = [];
-        ninjaData.push(parent);
-        children.forEach(c => {
-            if (!c.id) c.id = c.title;
-            c.parent = parent.id;
-            parent.children.push(c.id);
-            ninjaData.push(c);
-        });
-    }
 
     /* The silly gears... */
     let actionMenu = [...document.querySelectorAll('#region-main-settings-menu [data-enhance="moodle-core-actionmenu"] a[role="menuitem"]')].map(x => ({title: x.textContent, url: x.getAttribute("href")}));
