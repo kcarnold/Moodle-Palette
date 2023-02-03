@@ -90,9 +90,7 @@
     }
 
     let ninjaData = [];
-    addTree(
-        {id: "Sections", title: "Course Sections"},
-        [
+    let courseSections = [
             {title: "Course Home", handler: () => {window.location = `/course/view.php?id=${courseId}&perpage=5000`; }},
             {
                 id: "Participants",
@@ -100,7 +98,15 @@
                 handler: () => {window.location = `/user/index.php?id=${courseId}`; }
             },
             {title: "Gradebook", handler: () => {window.location = `/grade/report/index.php?id=${courseId}`; }}
-        ]);
+        ];
+    (() => {
+        let x;
+        if (x = document.querySelector('a.editingbutton')) {
+            courseSections.push({title: "Toggle Editing", handler: () => {x.click(); }})
+        }
+    })();
+
+    addTree({id: "Sections", title: "Course Sections"}, courseSections);
 
     let activityItem = {id: "Act", title: "Activity", children: []};
     ninjaData.push(activityItem);
