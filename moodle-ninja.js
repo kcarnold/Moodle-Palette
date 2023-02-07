@@ -336,8 +336,9 @@
             // Set the grade text box.
             let gradeTextBox = userRow.querySelector('input[name^=quickgrade]');
             // The maximum grade is the text just after the text box
-            // FIXME: hard-coded to 100.
-            let maxGrade = 100;
+            let outOfText = gradeTextBox.nextSibling.textContent;
+            // extract just the number out of that.
+            let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
             // type the grade into the text box
             gradeTextBox.value = grade * maxGrade;
             // trigger the change event
