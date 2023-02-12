@@ -428,4 +428,45 @@
         });
     }
     hackReviewOptions();
+
+    function getMoodleTimeValue(doc, baseName) {
+        let year = doc.querySelector(`[name="${baseName}[year]"]`).value;
+        let month = doc.querySelector(`[name="${baseName}[month]"]`).value;
+        let day = doc.querySelector(`[name="${baseName}[day]"]`).value;
+        let hour = doc.querySelector(`[name="${baseName}[hour]"]`).value;
+        let minute = doc.querySelector(`[name="${baseName}[minute]"]`).value;
+        return new Date(year, month - 1, day, hour, minute);
+    }
+
+    function getMoodleTimeWithEnabled(doc, baseName) {
+        let enabled = doc.querySelector(`[name="${baseName}[enabled]"]`).checked;
+        let time = getMoodleTimeValue(doc, baseName);
+        return {enabled, time};
+    }
+
+    // Retrieve quiz metadata
+    async function getQuizMeta(quizId) {
+        let quizModEditPage = await fetch(`https://moodle.calvin.edu/course/modedit.php?update=${quizId}`);
+        // parse the HTML
+        let quizModEditPageHTML = await quizModEditPage.text();
+        let quizModEditPageDOM = new DOMParser().parseFromString(quizModEditPageHTML, 'text/html');
+        let meta = {};
+        // get grading method
+        meta['gradingMethod'] = quizModEditPageDOM.querySelector('#id_grademethod').value;
+        meta['gradingMethodText'] = quizModEditPageDOM.querySelector('#id_grademethod option[selected]').textContent;
+        // get number of attempts allowed
+        meta['attemptsAllowed'] = quizModEditPageDOM.querySelector('#id_attempts option[selected]').textContent;
+        // get open time
+        meta['openTime'] = getMoodleTimeWithEnabled(quizModEditPageDOM, 'timeopen');
+        // get close time
+        meta['closeTime'] = getMoodleTimeWithEnabled(quizModEditPageDOM, 'timeclose');
+        // get time limit
+        meta['timeLimit'] = {
+            limit: quizModEditPageDOM.querySelector(`[name="timelimit[number]"]`).value,
+            enabled: quizModEditPageDOM.querySelector(`[name="timelimit[enabled]"]`).value,
+        };
+        // get grade category
+        meta['gradeCategory'] = quizModEditPageDOM.querySelector('#id_gradecat option[selected]').textContent;
+        return meta;
+    }
 })();
