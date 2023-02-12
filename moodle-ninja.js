@@ -297,10 +297,9 @@
     }
 
     /*
-    *** Activity crediting stuff
-    *** This should be in a separate file
-    *** but it was easy code to write
-    */
+     * Giving credit for timely completion of quizzes.
+     * This should be in a separate file.
+     */
     async function getEmailsWhoAttempted(quizId) {
         /* get the response CSV */
         let url = `/mod/quiz/report.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${quizId}&mode=overview&attempts=enrolled_with&onlygraded=&onlyregraded=&slotmarks=1`;
@@ -310,6 +309,15 @@
         grades = grades[0];
         // the columns aren't labeled.
         return new Set(grades.map(attempt => attempt[2]));
+    }
+
+    function fillInTextboxIfDifferent(textbox, value) {
+        value = "" + value; // make sure it's a string
+        if (textbox.value !== value) {
+            textbox.value = value;
+            // trigger the change event
+            textbox.dispatchEvent(new Event('change'));
+        }
     }
 
     async function creditAllAttempts(quizIds) {
@@ -339,18 +347,15 @@
             let outOfText = gradeTextBox.nextSibling.textContent;
             // extract just the number out of that.
             let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
-            // type the grade into the text box
-            gradeTextBox.value = grade * maxGrade;
-            // trigger the change event
-            gradeTextBox.dispatchEvent(new Event('change'));
+            fillInTextboxIfDifferent(gradeTextBox, grade * maxGrade);
             // Set the feedback text box.
+            let feedbackText = '';
             if (grade < 1.0) {
-                let feedbackText = `You have completed ${quizzesAttempted} out of ${quizIds.length} quizzes that are part of this assignment. Don't forget to complete these quizzes on Moodle; let the instructor know when you have done so.`;
-                let feedbackTextBox = userRow.querySelector('textarea[name^=quickgrade_comments]');
-                feedbackTextBox.value = feedbackText;
-                // trigger the change event
-                feedbackTextBox.dispatchEvent(new Event('change'));
+                feedbackText = `You have completed ${quizzesAttempted} out of ${quizIds.length} quizzes that are part of this assignment.`;
+                feedbackText += ` Don't forget to complete these quizzes on Moodle. Let the instructor know when you have done so.`;
             }
+            let feedbackTextBox = userRow.querySelector('textarea[name^=quickgrade_comments]');
+            fillInTextboxIfDifferent(feedbackTextBox, feedbackText);
         }
     }
 
