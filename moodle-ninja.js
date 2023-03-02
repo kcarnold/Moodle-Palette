@@ -317,7 +317,7 @@
             // the columns aren't labeled! It's last,first,email,status,startTime,completionTime,duration,grade then grades for each question
             let email = attempt[2];
             let completionTime = attempt[5];
-            // Parse the date, format looks like "February 17 2023  11:28 AM". 
+            // Parse the date, format looks like "February 17 2023  11:28 AM".
             let date = new Date(completionTime);
             let existingAttempt = earliestAttemptByUser.get(email);
             if (!existingAttempt || existingAttempt > date) {
@@ -339,10 +339,10 @@
     async function creditAllAttempts(quizIds) {
         // don't count spring break as business days.
         let exceptionDates = ['2023-02-27',
-'2023-02-28',
-'2023-03-01',
-'2023-03-02',
-'2023-03-03'].map(x => new Date(x));
+                              '2023-02-28',
+                              '2023-03-01',
+                              '2023-03-02',
+                              '2023-03-03'].map(x => new Date(x));
         let attemptTimesForAllQuizzes = new Map(); // from email to array of dates
         for (let quizId of quizIds) {
             let attemptTimes = await getEarliestAttemptTimes(quizId);
@@ -398,7 +398,7 @@
             // Set the feedback text box.
             let feedbackText = '';
             if (grade < 1.0) {
-                feedbackText = `You have completed ${quizzesAttempted} out of ${quizIds.length} quizzes that are part of this assignment.`;
+                feedbackText = `You have completed ${numOnTime} out of ${quizIds.length} quizzes that are part of this assignment on time.`;
                 // Add a comment for each late day.
                 for (let lateDay of lateDays) {
                     feedbackText += ` You were ${lateDay} day(s) late on a quiz.`;
@@ -411,24 +411,24 @@
     }
 
 
-function countBusinessDays(startDate, endDate, exceptionDates) {
-    // Ignore any dates that are in the exception list.
-  let count = 0;
-  let currentDate = startDate;
-  while (currentDate <= endDate) {
-    // Get just the date part of the date.
-    let dayOf = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-    if (!exceptionDates.includes(dayOf)) {
-        let day = currentDate.getDay();
-        // day 0 is Sunday, day 6 is Saturday
-        if (day !== 0 && day !== 6) {
-        count++;
+    function countBusinessDaysBetween(startDate, endDate, exceptionDates) {
+        // Ignore any dates that are in the exception list.
+        let count = 0;
+        let currentDate = startDate;
+        while (currentDate <= endDate) {
+            // Get just the date part of the date.
+            let dayOf = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+            if (!exceptionDates.includes(dayOf)) {
+                let day = currentDate.getDay();
+                // day 0 is Sunday, day 6 is Saturday
+                if (day !== 0 && day !== 6) {
+                    count++;
+                }
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
         }
+        return count;
     }
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  return count;
-}
 
 
 
