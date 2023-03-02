@@ -361,7 +361,10 @@
         // now we have a map of emails to number of quizzes attempted
 
         // For each user, fill in the grade and feedback comments.
-        let defaultDueDate = null;
+        let defaultDueDate = null, defaultDueElt;
+        if (defaultDueElt = document.querySelector('#region-main [data-region="activity-dates"] div')) {
+            defaultDueDate = new Date(defaultDueElt.textContent.trim().match(/Due: (.+)$/)[1]);
+        }
         let userRows = document.querySelectorAll('.gradingtable table tbody tr');
         for (let userRow of userRows) {
             let email = userRow.querySelector('.email').textContent; // should also be .c3
