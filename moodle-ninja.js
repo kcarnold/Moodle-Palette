@@ -400,15 +400,13 @@
                 }
             }
             let grade = totalPoints / quizIds.length;
-            // round to 2 decimal places
-            grade = Math.round(grade * 100) / 100;
             // Set the grade text box.
             let gradeTextBox = userRow.querySelector('input[name^=quickgrade]');
             // The maximum grade is the text just after the text box
             let outOfText = gradeTextBox.nextSibling.textContent;
             // extract just the number out of that.
             let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
-            fillInTextboxIfDifferent(gradeTextBox, grade * maxGrade);
+            fillInTextboxIfDifferent(gradeTextBox, (grade * maxGrade).toFixed(2));
             // Set the feedback text box.
             let feedbackText = '';
             if (grade < 1.0) {
