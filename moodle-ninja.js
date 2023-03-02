@@ -336,22 +336,26 @@
         }
     }
 
-    async function creditAllAttempts(quizIds) {
+    async function creditAllAttempts(activities) {
         // don't count spring break as business days.
+        // Treat the days as local times, since that's needed for business day calculations.
         let exceptionDates = ['2023-02-27',
                               '2023-02-28',
                               '2023-03-01',
                               '2023-03-02',
-                              '2023-03-03'].map(x => new Date(x));
-        let attemptTimesForAllQuizzes = new Map(); // from email to array of dates
+                              '2023-03-03'].map(x => new Date(`${x}T00:00:00`));
+
+        let quizIds = activities.map(activity => activity.id);
+        // Make a map from quiz id to activity name
+        let quizNames = new Map();
+        for (let activity of activities) {
+            quizNames.set(activity.id, activity.title);
+        }
+
+
+        let attemptsByQuiz = new Map(); // from email to array of dates
         for (let quizId of quizIds) {
-            let attemptTimes = await getEarliestAttemptTimes(quizId);
-            // add the completion times of quizzes attempted to the map
-            for (let [email, date] of attemptTimes) {
-                let existingTimes = attemptTimesForAllQuizzes.get(email) || [];
-                existingTimes.push(date);
-                attemptTimesForAllQuizzes.set(email, existingTimes);
-            }
+            attemptsByQuiz.set(quizId, await getEarliestAttemptTimes(quizId));
         }
 
         // now we have a map of emails to number of quizzes attempted
@@ -374,18 +378,25 @@
             }
 
             // Loop through each quiz, count how many days late each one is.
-            let numOnTime = 0, lateDays = [], latePoints = 0;
-            for (let attemptTime of attemptTimesForAllQuizzes.get(email) || []) {
+            let resultsByQuiz = new Map(), totalPoints = 0;
+            for (let [quizId, attemptTimes] of attemptsByQuiz) {
+                let attemptTime = attemptTimes.get(email);
+                if (!attemptTime) {
+                    // They didn't attempt this quiz.
+                    resultsByQuiz.set(quizId, "No attempt");
+                    continue;
+                }
                 if (attemptTime <= dueDate) {
-                    numOnTime++;
+                    resultsByQuiz.set(quizId, "On time");
+                    totalPoints++;
                 } else {
                     let daysLate = countBusinessDaysBetween(dueDate, attemptTime, exceptionDates);
-                    lateDays.push(daysLate);
+                    resultsByQuiz.set(quizId, `${daysLate} days late`);
                     // Subtract 1/5 of a point for each day late.
-                    latePoints += Math.max(0, 1 - daysLate * 0.2);
+                    totalPoints += Math.max(0, 1 - daysLate * 0.2);
                 }
             }
-            let grade = (numOnTime + latePoints) / quizIds.length;
+            let grade = totalPoints / quizIds.length;
             // round to 2 decimal places
             grade = Math.round(grade * 100) / 100;
             // Set the grade text box.
@@ -398,12 +409,17 @@
             // Set the feedback text box.
             let feedbackText = '';
             if (grade < 1.0) {
-                feedbackText = `You have completed ${numOnTime} out of ${quizIds.length} quizzes that are part of this assignment on time.`;
-                // Add a comment for each late day.
-                for (let lateDay of lateDays) {
-                    feedbackText += ` You were ${lateDay} day(s) late on a quiz.`;
+                feedbackText = `Results by quiz: `;
+                let anyNoAttempt = false;
+                for (let [quizId, result] of resultsByQuiz) {
+                    if (result === "No attempt") {
+                        anyNoAttempt = true;
+                    }
+                    feedbackText += `${quizNames.get(quizId)}: ${result}, `;
                 }
-                feedbackText += ` Don't forget to complete these quizzes on Moodle. Let the instructor know when you have done so.`;
+                if (anyNoAttempt) {
+                    feedbackText += ` Don't forget to complete these quizzes on Moodle. Let the instructor know when you have done so.`;
+                }
             }
             let feedbackTextBox = userRow.querySelector('textarea[name^=quickgrade_comments]');
             fillInTextboxIfDifferent(feedbackTextBox, feedbackText);
@@ -414,17 +430,21 @@
     function countBusinessDaysBetween(startDate, endDate, exceptionDates) {
         // Ignore any dates that are in the exception list.
         let count = 0;
-        let currentDate = startDate;
+        // Make sure to COPY THE DATE VALUES, otherwise we'll be modifying the original dates.
+        let currentDate = new Date(startDate);
         while (currentDate <= endDate) {
             // Get just the date part of the date.
             let dayOf = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-            if (!exceptionDates.includes(dayOf)) {
+            // Can't use `.includes` because it doesn't properly compare Date objects.
+            if (!exceptionDates.some(x => x - dayOf === 0)) {
                 let day = currentDate.getDay();
                 // day 0 is Sunday, day 6 is Saturday
                 if (day !== 0 && day !== 6) {
                     count++;
                 }
             }
+            // go to the next day.
+            // Note: this actually works, because setDate handles out-of-range by wrapping to the next month.
             currentDate.setDate(currentDate.getDate() + 1);
         }
         return count;
@@ -479,8 +499,7 @@
                 if (!confirmed) {
                     return;
                 }
-                let quizIds = activities.map(activity => activity.id);
-                await creditAllAttempts(quizIds);
+                await creditAllAttempts(activities);
             }
         });
     }
