@@ -300,7 +300,18 @@
      * Giving credit for timely completion of quizzes.
      * This should be in a separate file.
      */
-    async function getEarliestAttemptTimes(quizId) {
+    async function getEarliestAttemptTimes(activity) {
+        if (activity.type === 'quiz') {
+            return await getQuizEarliestAttemptTimes(activity.id);
+        } else if (activity.type === 'assign') {
+            return await getAssignEarliestAttemptTimes(activity.id);
+        } else {
+            // complain
+            throw new Error(`Don't know how to get earliest attempt times for ${activity.type}`);
+        }
+    }
+
+    async function getQuizEarliestAttemptTimes(quizId) {
         /**
          * Get the times when each user completed the quiz.
          * Returns a map from email to date.
@@ -327,6 +338,32 @@
         return earliestAttemptByUser;
     }
 
+    async function getParticipants() {
+
+    }
+
+    async function getAssignEarliestAttemptTimes(moduleId) {
+        /** get the submission times from the log */
+        let url = `/report/log/index.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${courseId}&modid=${moduleId}&modaction=c&chooselog=1&logreader=logstore_standard`;
+        let response = await fetch(url);
+        let data = await response.json();
+        debugger;
+
+        // for some reason there's an extra array layer
+        data = data[0];
+
+        /* The format isn't documented, so apologies for the atrocious code. */
+        let earliestAttemptByUser = new Map();
+        for (let row of data) {
+            // The log entries we care about have a column 5 that looks like "Submission created." and a column 6 that looks like
+            // "The user with id '21655' created an online text submission with '4' words in the assignment with course module id '1575205'."
+            // There is no column for the email; we have to look it up.
+            if (data[5] !== "Submission created.") continue;
+
+        }
+        
+    }
+
     function fillInTextboxIfDifferent(textbox, value) {
         value = "" + value; // make sure it's a string
         if (textbox.value !== value) {
@@ -345,20 +382,20 @@
                               '2023-03-02',
                               '2023-03-03'].map(x => new Date(`${x}T00:00:00`));
 
-        let quizIds = activities.map(activity => activity.id);
-        // Make a map from quiz id to activity name
-        let quizNames = new Map();
+        let activityIds = activities.map(activity => activity.id);
+        // Make a map from activity id to activity name
+        let activityNames = new Map();
         for (let activity of activities) {
-            quizNames.set(activity.id, activity.title);
+            activityNames.set(activity.id, activity.title);
         }
 
 
-        let attemptsByQuiz = new Map(); // from email to array of dates
-        for (let quizId of quizIds) {
-            attemptsByQuiz.set(quizId, await getEarliestAttemptTimes(quizId));
+        let attemptsByActivity = new Map(); // from email to array of dates
+        for (let activity of activities) {
+            attemptsByActivity.set(activity.id, await getEarliestAttemptTimes(activity));
         }
 
-        // now we have a map of emails to number of quizzes attempted
+        // now we have a map of emails to dates of activity attempts
 
         // For each user, fill in the grade and feedback comments.
         let defaultDueDate = null, defaultDueElt;
@@ -380,26 +417,26 @@
                 dueDate = new Date(dueDate);
             }
 
-            // Loop through each quiz, count how many days late each one is.
-            let resultsByQuiz = new Map(), totalPoints = 0;
-            for (let [quizId, attemptTimes] of attemptsByQuiz) {
+            // Loop through each activity, count how many days late each one is.
+            let resultsByActivity = new Map(), totalPoints = 0;
+            for (let [activityId, attemptTimes] of attemptsByActivity) {
                 let attemptTime = attemptTimes.get(email);
                 if (!attemptTime) {
-                    // They didn't attempt this quiz.
-                    resultsByQuiz.set(quizId, "No attempt");
+                    // They didn't attempt this activity.
+                    resultsByActivity.set(activityId, "No attempt");
                     continue;
                 }
                 if (attemptTime <= dueDate) {
-                    resultsByQuiz.set(quizId, "On time");
+                    resultsByActivity.set(activityId, "On time");
                     totalPoints++;
                 } else {
                     let daysLate = countBusinessDaysBetween(dueDate, attemptTime, exceptionDates);
-                    resultsByQuiz.set(quizId, `${daysLate} days late`);
+                    resultsByActivity.set(activityId, `${daysLate} days late`);
                     // Subtract 1/5 of a point for each day late.
                     totalPoints += Math.max(0, 1 - daysLate * 0.2);
                 }
             }
-            let grade = totalPoints / quizIds.length;
+            let grade = totalPoints / activityIds.length;
             // Set the grade text box.
             let gradeTextBox = userRow.querySelector('input[name^=quickgrade]');
             // The maximum grade is the text just after the text box
@@ -410,16 +447,16 @@
             // Set the feedback text box.
             let feedbackText = '';
             if (grade < 1.0) {
-                feedbackText = `Results by quiz: `;
+                feedbackText = `Results by activity: `;
                 let anyNoAttempt = false;
-                for (let [quizId, result] of resultsByQuiz) {
+                for (let [activityId, result] of resultsByActivity) {
                     if (result === "No attempt") {
                         anyNoAttempt = true;
                     }
-                    feedbackText += `${quizNames.get(quizId)}: ${result}, `;
+                    feedbackText += `${activityNames.get(activityId)}: ${result}, `;
                 }
                 if (anyNoAttempt) {
-                    feedbackText += ` Don't forget to complete these quizzes on Moodle. Let the instructor know when you have done so.`;
+                    feedbackText += ` Don't forget to complete these activities on Moodle. Let the instructor know when you have done so.`;
                 }
             }
             let feedbackTextBox = userRow.querySelector('textarea[name^=quickgrade_comments]');
@@ -465,10 +502,18 @@
         let matchingActivities = [];
         for (let category of activityDirectory) {
             for (let activity of category.activities || []) {
-                // if the activity URL doesn't contain /mod/quiz/view.php, it's not a quiz.
-                if (!/\/mod\/quiz\/view.php/.test(activity.url)) {
+                // Extract the activity type from the URL.
+                if (/\/mod\/quiz\/view.php/.test(activity.url)) {
+                    activity.type = 'quiz';
+                } else if (/\/mod\/assign\/view.php/.test(activity.url)) {
+                    activity.type = 'assign'; // Match the name of the module.
+                } else if (/\/mod\/forum\/view.php/.test(activity.url)) {
+                    activity.type = 'forum';
+                } else {
+                    // not a type we care about.
                     continue;
                 }
+
                 // check that the title matches.
                 if (!regex.test(activity.title)) {
                     continue;
