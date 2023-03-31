@@ -300,11 +300,11 @@
      * Giving credit for timely completion of quizzes.
      * This should be in a separate file.
      */
-    async function getEarliestAttemptTimes(activity) {
+    async function getEarliestAttemptTimes(activity, userIdToEmail) {
         if (activity.type === 'quiz') {
             return await getQuizEarliestAttemptTimes(activity.id);
         } else if (activity.type === 'assign') {
-            return await getAssignEarliestAttemptTimes(activity.id);
+            return await getAssignEarliestAttemptTimes(activity.id, userIdToEmail);
         } else {
             // complain
             throw new Error(`Don't know how to get earliest attempt times for ${activity.type}`);
@@ -338,11 +338,15 @@
         return earliestAttemptByUser;
     }
 
-    async function getParticipants() {
+    async function getAssignEarliestAttemptTimes(moduleId, userIdToEmail) {
+        /**
+         * Get the earliest submission time for each user.
+         * Returns a map from email to date.
+         * 
+         * Since the assignment module doesn't have a report, we have to get the data from the log.
+         * The log data doesn't include the email, so this function requires a map from user ID to email.
+         */
 
-    }
-
-    async function getAssignEarliestAttemptTimes(moduleId) {
         /** get the submission times from the log */
         let url = `/report/log/index.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${courseId}&modid=${moduleId}&modaction=c&chooselog=1&logreader=logstore_standard`;
         let response = await fetch(url);
@@ -360,8 +364,21 @@
             // There is no column for the email; we have to look it up.
             if (data[5] !== "Submission created.") continue;
 
+            let userId = data[6].match(/user with id '(\d+)'/)[1];
+            let email = userIdToEmail.get(userId);
+            if (!email) {
+                throw new Error(`No email found for user ${userId}`);
+            }
+
+            // The date format looks like "03/3/23, 20:16". Fortunately, the Date constructor seems to handle it.
+            let date = new Date(data[0]);
+
+            let existingAttempt = earliestAttemptByUser.get(email);
+            if (!existingAttempt || existingAttempt > date) {
+                earliestAttemptByUser.set(email, date);
+            }
         }
-        
+        return earliestAttemptByUser;
     }
 
     function fillInTextboxIfDifferent(textbox, value) {
@@ -373,7 +390,7 @@
         }
     }
 
-    async function creditAllAttempts(activities) {
+    async function creditAllAttempts(activities, userIdToEmail) {
         // don't count spring break as business days.
         // Treat the days as local times, since that's needed for business day calculations.
         let exceptionDates = ['2023-02-27',
@@ -392,7 +409,7 @@
 
         let attemptsByActivity = new Map(); // from email to array of dates
         for (let activity of activities) {
-            attemptsByActivity.set(activity.id, await getEarliestAttemptTimes(activity));
+            attemptsByActivity.set(activity.id, await getEarliestAttemptTimes(activity, userIdToEmail));
         }
 
         // now we have a map of emails to dates of activity attempts
@@ -547,9 +564,24 @@
                 if (!confirmed) {
                     return;
                 }
+
+                let userIdToEmail = scrapeUserIdToEmailMap();
                 await creditAllAttempts(activities);
             }
         });
+    }
+
+    function scrapeUserIdToEmailMap() {
+        let userIdToEmail = new Map();
+        let userRows = document.querySelectorAll('.gradingtable table tbody tr');
+        for (let userRow of userRows) {
+            let email = userRow.querySelector('.email').textContent; // should also be .c3
+    
+            let linkWithUserId = userRow.querySelector('a[href*="user/view.php"]');
+            let userId = new URL(linkWithUserId.href).searchParams.get('id');
+            userIdToEmail.set(userId, email);
+        }
+        return userIdToEmail;
     }
 
     // Hack: group selection box bigger:
