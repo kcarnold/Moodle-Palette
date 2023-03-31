@@ -351,7 +351,6 @@
         let url = `/report/log/index.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${courseId}&modid=${moduleId}&modaction=c&chooselog=1&logreader=logstore_standard`;
         let response = await fetch(url);
         let data = await response.json();
-        debugger;
 
         // for some reason there's an extra array layer
         data = data[0];
@@ -362,16 +361,17 @@
             // The log entries we care about have a column 5 that looks like "Submission created." and a column 6 that looks like
             // "The user with id '21655' created an online text submission with '4' words in the assignment with course module id '1575205'."
             // There is no column for the email; we have to look it up.
-            if (data[5] !== "Submission created.") continue;
+            if (row[5] !== "Submission created.") continue;
 
-            let userId = data[6].match(/user with id '(\d+)'/)[1];
+            let userId = row[6].match(/user with id '(\d+)'/)[1];
             let email = userIdToEmail.get(userId);
             if (!email) {
-                throw new Error(`No email found for user ${userId}`);
+                console.warn(`No email found for user ${userId}`);
+                continue;
             }
 
             // The date format looks like "03/3/23, 20:16". Fortunately, the Date constructor seems to handle it.
-            let date = new Date(data[0]);
+            let date = new Date(row[0]);
 
             let existingAttempt = earliestAttemptByUser.get(email);
             if (!existingAttempt || existingAttempt > date) {
@@ -566,7 +566,7 @@
                 }
 
                 let userIdToEmail = scrapeUserIdToEmailMap();
-                await creditAllAttempts(activities);
+                await creditAllAttempts(activities, userIdToEmail);
             }
         });
     }
