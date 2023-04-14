@@ -135,7 +135,7 @@
                 let id = "ReusePrev" + response.text;
                 ninja.data.push({
                     id: id,
-                    title: `${response.count}x ${response.points}pts: ${response.text}`,
+                    title: `(${response.points}): ${response.text}`,
                     parent: "ReusePrev",
                     response: response,
                     handler: responseHandler
