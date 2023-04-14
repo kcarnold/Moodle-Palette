@@ -103,8 +103,101 @@
                 document.querySelectorAll('.qtype_essay_editor.qtype_essay_response.readonly').forEach(x => {x.style.minHeight=''});
             }
         }
-
     ];
+
+    let reusePrevAction = {
+        id: "ReusePrev",
+        title: "Reuse Previous Manual Grade",
+        hotkey: "cmd+alt+n",
+        children: [],
+        handler: () => {
+            // Get all non-empty previous responses
+            let prevResponses = new Map();
+            for (let attempt of document.querySelectorAll('.que.essay')) {
+                let editor = attempt.querySelector('.editor_atto_content');
+                let text = editor.textContent.trim();
+                if (text === "") continue;
+                let points = attempt.querySelector('input[name$="-mark"]').value;
+                let count = (prevResponses.get(text) || {count: 0}).count + 1;
+                prevResponses.set(text, {
+                    text: text,
+                    html: editor.innerHTML,
+                    points: points,
+                    count: count
+                })
+            }
+
+            cleanupReuseGrades();
+
+            // Add a new entry for each response, in descending order of `count`.
+            let sortedResponses = Array.from(prevResponses.values()).sort((a, b) => b.count - a.count);
+            for (let response of sortedResponses) {
+                let id = "ReusePrev" + response.text;
+                ninja.data.push({
+                    id: id,
+                    title: `${response.count}x ${response.points}pts: ${response.text}`,
+                    parent: "ReusePrev",
+                    response: response,
+                    handler: responseHandler
+                });
+                reusePrevAction.children.push(id);
+            }
+
+            // Force update
+            ninja.data = ninja.data;
+
+            // Open the ninja menu
+            ninja.open({parent: "ReusePrev"});
+            // prevent from closing
+            return {keepOpen: true};
+        }
+    }
+
+    ninja.data.push(reusePrevAction);
+    // force update
+    ninja.data = ninja.data.slice();
+
+    
+    // Keep track of which Atto editor was last focused.
+    let lastFocusedEditor = null;
+    document.addEventListener('focusin', function(e) {
+        if (e.target.classList.contains('editor_atto_content')) {
+            lastFocusedEditor = e.target;
+        }
+    });
+
+
+
+    function cleanupReuseGrades() {
+        // Clear out any existing responses in ninja-data
+        // Loop through a copy of ninja.data so we can modify it.
+        for (let item of ninja.data.slice()) {
+            if (item.id === "ReusePrev") {
+                item.children = [];
+            } else if (item.parent === "ReusePrev") {
+                // Remove this item from ninja.data
+                let index = ninja.data.indexOf(item);
+                ninja.data.splice(index, 1); // splice args: index, num items to remove, items to insert (none in this case)
+            }
+        }
+    }
+
+    function responseHandler(item) {
+        let {response} = item;
+        let editor = lastFocusedEditor;
+        if (!editor) {
+            alert("No editor is focused.");
+            return;
+        }
+        editor.innerHTML = response.html;
+        let points = editor.closest('.que.essay').querySelector('input[name$="-mark"]');
+        points.value = response.points;
+
+        // Need to click the "code" button off and on to get the HTML change to save.
+        let codeIcon = editor.closest('.que.essay').querySelector('.icon.fa-code');
+        codeIcon.click();
+        setTimeout(function() { codeIcon.click(); }, 1*1000);
+    }
 
     // Autofocus search box.
     function autofocusSearchBox() {
