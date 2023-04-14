@@ -102,6 +102,20 @@
             handler: () => {
                 document.querySelectorAll('.qtype_essay_editor.qtype_essay_response.readonly').forEach(x => {x.style.minHeight=''});
             }
+        },
+        {
+            id: "NextUngraded",
+            title: "Go next ungraded manual feedback",
+            handler: () => {
+                // Get all non-empty previous responses
+                for (let attempt of document.querySelectorAll('.que.essay')) {
+                    let pointsBox = attempt.querySelector('input[name$="-mark"]');
+                    if (pointsBox && pointsBox.value.trim() === "") {
+                        pointsBox.focus();
+                        break;
+                    }
+                }
+            }
         }
     ];
 
@@ -157,12 +171,13 @@
     // force update
     ninja.data = ninja.data.slice();
 
-    
+
     // Keep track of which Atto editor was last focused.
     let lastFocusedEditor = null;
     document.addEventListener('focusin', function(e) {
         if (e.target.classList.contains('editor_atto_content')) {
             lastFocusedEditor = e.target;
+            window.global.hotkeys.filter = _event => true; // HACK: turn off hotkey filtering for input boxes.
         }
     });
 
