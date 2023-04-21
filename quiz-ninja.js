@@ -152,7 +152,7 @@
                     title: `(${response.points}): ${response.text}`,
                     parent: "ReusePrev",
                     response: response,
-                    handler: responseHandler
+                    handler: reusePriorResponseFromItem
                 });
                 reusePrevAction.children.push(id);
             }
@@ -197,7 +197,7 @@
         }
     }
 
-    function responseHandler(item) {
+    function reusePriorResponseFromItem(item) {
         let {response} = item;
         let editor = lastFocusedEditor;
         if (!editor) {
@@ -211,7 +211,10 @@
         // Need to click the "code" button off and on to get the HTML change to save.
         let codeIcon = editor.closest('.que.essay').querySelector('.icon.fa-code');
         codeIcon.click();
-        setTimeout(function() { codeIcon.click(); }, 1*1000);
+        setTimeout(function() { codeIcon.click(); }, .25*1000);
+
+        // Focus the points box so we can tab to the next one.
+        points.focus();
     }
 
     // Autofocus search box.
