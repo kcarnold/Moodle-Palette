@@ -199,6 +199,7 @@
             let observer = new MutationObserver(mutCallback)
             observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
             hookFileSubmissions(document.body);
+            rubricNumbers(document.body); // FIXME: proper hook mechanism
         }
     });
     ninjaData.push({
@@ -241,6 +242,16 @@
         });
     }
 
+    function rubricNumbers(parentNode) {
+        for (let criterion of document.querySelectorAll("#advancedgrading-criteria tr.criterion")) {
+            let scoreElt = criterion.querySelector('.score input');
+            let outOf = criterion.querySelector('.score div').textContent;
+            scoreElt.type = 'number';
+            scoreElt.min = "0";
+            scoreElt.max = ""+outOf;
+        }
+    }
+
     function mutCallback(mutationList, observer) {
         mutationList.forEach(mutation => {
             if (mutation.type !== 'childList') return;
@@ -248,6 +259,7 @@
             mutation.addedNodes.forEach(node => {
                 if (!node.querySelectorAll) { return; }
                 hookFileSubmissions(node);
+                rubricNumbers(node);
             })
         })
     }
