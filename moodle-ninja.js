@@ -249,6 +249,7 @@
             scoreElt.type = 'number';
             scoreElt.min = "0";
             scoreElt.max = ""+outOf;
+            scoreElt.step = "0.1";
             scoreElt.required = true;
         }
     }
