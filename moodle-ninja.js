@@ -466,7 +466,7 @@
                     let daysLate = countBusinessDaysBetween(dueDate, attemptTime, exceptionDates);
                     resultsByActivity.set(activityId, `${daysLate} days late`);
                     // Subtract 1/5 of a point for each day late.
-                    totalPoints += Math.max(0, 1 - daysLate * 0.2);
+                    totalPoints += Math.max(0.2, 1 - daysLate * 0.2);
                 }
             }
             let grade = totalPoints / activityIds.length;
