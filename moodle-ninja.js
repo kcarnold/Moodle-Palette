@@ -60,7 +60,21 @@
                     console.warn("OOPS, missing link", activityInstance, title);
                 }
                 let url = linkNode.getAttribute('href');
-                return {title, url};
+
+                let activity = {title, url};
+                // Extract the activity type from the URL.
+                if (/\/mod\/quiz\/view.php/.test(activity.url)) {
+                    activity.type = 'quiz';
+                } else if (/\/mod\/assign\/view.php/.test(activity.url)) {
+                    activity.type = 'assign'; // Match the name of the module.
+                } else if (/\/mod\/forum\/view.php/.test(activity.url)) {
+                    activity.type = 'forum';
+                }
+
+                // extract the activity id while we're here
+                activity.id = new URL(activity.url).searchParams.get('id');
+
+                return activity;
             });
             return {secId, secTitle, activities};
         });
@@ -312,6 +326,47 @@
         );
     }
 
+
+    ninjaData.push({
+        id: "BulkOverride",
+        title: "Bulk Quiz Overrides",
+        handler: async () => {
+            let userId = prompt("User ID?");
+            if (!userId) return;
+
+            // activities of type quiz
+            let quizzes = activityDirectory.flatMap(category => 
+                category.activities.filter(x => x.type === "quiz"));
+            let activityTitles = quizzes.map(x => x.title).join("\n");
+            if (!confirm(`This will override the due date for the following quizzes:\n${activityTitles}\n\nContinue?`)) return;
+            
+            for (let quiz of quizzes) {
+                let quizId = quiz.id;
+                console.log(quiz);
+                let response = await fetch("https://moodle.calvin.edu/mod/quiz/overrideedit.php", {
+                    "credentials": "include",
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:107.0) Gecko/20100101 Firefox/107.0",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                        "Accept-Language": "en-US,en;q=0.5",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Upgrade-Insecure-Requests": "1",
+                        "Sec-Fetch-Dest": "document",
+                        "Sec-Fetch-Mode": "navigate",
+                        "Sec-Fetch-Site": "same-origin",
+                        "Sec-Fetch-User": "?1"
+                    },
+                    "referrer": `https://moodle.calvin.edu/mod/quiz/overrideedit.php?action=adduser&cmid=${quizId}`,
+                    // "body": `action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&timeclose%5Bday%5D=9&timeclose%5Bmonth%5D=12&timeclose%5Byear%5D=2022&timeclose%5Bhour%5D=23&timeclose%5Bminute%5D=59&timeclose%5Benabled%5D=1&timelimit%5Bnumber%5D=40&timelimit%5Btimeunit%5D=60&timelimit%5Benabled%5D=1&attempts=1&submitbutton=Save`,
+                    "body": "action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&attempts=0&submitbutton=Save",
+                    "method": "POST",
+                    "mode": "cors"
+                });
+                console.log(response);
+            }
+        }
+    });
+    
     /*
      * Giving credit for timely completion of quizzes.
      * This should be in a separate file.
@@ -535,14 +590,7 @@
         let matchingActivities = [];
         for (let category of activityDirectory) {
             for (let activity of category.activities || []) {
-                // Extract the activity type from the URL.
-                if (/\/mod\/quiz\/view.php/.test(activity.url)) {
-                    activity.type = 'quiz';
-                } else if (/\/mod\/assign\/view.php/.test(activity.url)) {
-                    activity.type = 'assign'; // Match the name of the module.
-                } else if (/\/mod\/forum\/view.php/.test(activity.url)) {
-                    activity.type = 'forum';
-                } else {
+                if (activity.type !== "quiz" && activity.type !== "assign" && activity.type !== "forum") {
                     // not a type we care about.
                     continue;
                 }
@@ -551,10 +599,6 @@
                 if (!regex.test(activity.title)) {
                     continue;
                 }
-
-                // extract the quiz id while we're here
-                let quizId = new URL(activity.url).searchParams.get('id');
-                activity.id = quizId;
 
                 matchingActivities.push(activity);
             }
@@ -636,6 +680,7 @@
         return {enabled, time};
     }
 
+    /***
     // Retrieve quiz metadata
     async function getQuizMeta(quizId) {
         let quizModEditPage = await fetch(`https://moodle.calvin.edu/course/modedit.php?update=${quizId}`);
@@ -661,4 +706,5 @@
         meta['gradeCategory'] = quizModEditPageDOM.querySelector('#id_gradecat option[selected]').textContent;
         return meta;
     }
+    */
 })();
