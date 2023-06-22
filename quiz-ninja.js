@@ -14,7 +14,7 @@
     'use strict';
 
     let searchParams = new URLSearchParams(document.location.search);
-    let quizId = searchParams.get('id') || searchParams.get('cmid') || document.querySelector('input[name=id]').value;// edit quiz uses cmid
+    let quizId = searchParams.get('id') || searchParams.get('cmid') || searchParams.get('q') || document.querySelector('input[name=id]').value;// edit quiz uses cmid
 
     function go(path, search) {
         window.location = window.location.origin + path + search;
