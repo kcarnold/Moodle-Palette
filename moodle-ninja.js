@@ -88,6 +88,8 @@
         }
     }
 
+    let activityDirectoryFlat = activityDirectory.flatMap(x => x.activities);
+
     // https://github.com/ssleptsov/ninja-keys
     let tag = document.createElement('script');
     tag.setAttribute('type', 'module');
@@ -326,6 +328,32 @@
         );
     }
 
+    if (window.location.pathname === '/course/modedit.php') {
+        addTree(
+            {id: "Edit", title: "Editing"},
+            [
+                {
+                    title: "Edit next",
+                    handler: () => {
+                        let currentId = searchParams.get('update');
+                        let currentActivityIndex = activityDirectoryFlat.findIndex(x => x.id === currentId);
+                        if (currentActivityIndex === -1) {
+                            alert("Couldn't find current activity in activity directory.");
+                            return;
+                        }
+                        let nextActivity = activityDirectoryFlat[currentActivityIndex + 1];
+                        if (!nextActivity) {
+                            alert("No next activity.");
+                            return;
+                        }
+                        // Go to the edit page for the next activity.
+                        window.location = `/course/modedit.php?update=${nextActivity.id}`;
+                    }
+                }
+            ])
+        }
+
+
 
     ninjaData.push({
         id: "BulkOverride",
@@ -335,11 +363,11 @@
             if (!userId) return;
 
             // activities of type quiz
-            let quizzes = activityDirectory.flatMap(category => 
+            let quizzes = activityDirectory.flatMap(category =>
                 category.activities.filter(x => x.type === "quiz"));
             let activityTitles = quizzes.map(x => x.title).join("\n");
             if (!confirm(`This will override the due date for the following quizzes:\n${activityTitles}\n\nContinue?`)) return;
-            
+
             for (let quiz of quizzes) {
                 let quizId = quiz.id;
                 console.log(quiz);
@@ -358,7 +386,7 @@
                     },
                     "referrer": `https://moodle.calvin.edu/mod/quiz/overrideedit.php?action=adduser&cmid=${quizId}`,
                     // "body": `action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&timeclose%5Bday%5D=9&timeclose%5Bmonth%5D=12&timeclose%5Byear%5D=2022&timeclose%5Bhour%5D=23&timeclose%5Bminute%5D=59&timeclose%5Benabled%5D=1&timelimit%5Bnumber%5D=40&timelimit%5Btimeunit%5D=60&timelimit%5Benabled%5D=1&attempts=1&submitbutton=Save`,
-                    "body": "action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&attempts=0&submitbutton=Save",
+                    "body": `action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&attempts=0&submitbutton=Save`,
                     "method": "POST",
                     "mode": "cors"
                 });
@@ -366,7 +394,7 @@
             }
         }
     });
-    
+
     /*
      * Giving credit for timely completion of quizzes.
      * This should be in a separate file.
