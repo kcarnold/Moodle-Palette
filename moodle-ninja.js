@@ -693,6 +693,54 @@
     }
     hackReviewOptions();
 
+
+    // Inject quick-comment buttons into attempt review page
+    if (window.location.pathname === '/mod/quiz/review.php') {
+        let attemptId = new URL(window.location.href).searchParams.get('attempt');
+
+        document.querySelectorAll('.commentlink a').forEach(commentLink => {
+            let target = commentLink.getAttribute('href');
+
+            // Create a new button
+            let button = document.createElement('button');
+            button.textContent = "Quick comment";
+            button.style.marginLeft = '1em';
+            commentLink.parentNode.appendChild(button);
+
+            button.addEventListener('click', async (event) => {
+                event.preventDefault();
+                let text = await (await fetch(target)).text();
+
+                // parse the HTML
+                let doc = new DOMParser().parseFromString(text, 'text/html');
+
+                // construct a form submission
+                let form = new FormData();
+                doc.querySelectorAll('#manualgradingform input').forEach(inputElement => {
+                    let name = inputElement.name;
+                    let value = inputElement.value;
+                    // If the input element name ends with -mark, replace it with the grade.
+                    if (name.endsWith('-mark')) {
+                        value = "" + prompt("Grade?", value);
+                    }
+                    console.log(name, value)
+                    form.append(name, value);
+                });
+
+                // Submit the form.
+                let response = await fetch(target, {
+                    method: 'POST',
+                    body: form
+                });
+                // If it worked, reload the page.
+                if (response.ok) {
+                    //window.location.reload();
+                }
+            }, false);
+        });
+
+    }
+
     function getMoodleTimeValue(doc, baseName) {
         let year = doc.querySelector(`[name="${baseName}[year]"]`).value;
         let month = doc.querySelector(`[name="${baseName}[month]"]`).value;
