@@ -14,7 +14,17 @@
     'use strict';
 
     let searchParams = new URLSearchParams(document.location.search);
-    let quizId = searchParams.get('id') || searchParams.get('cmid') || searchParams.get('q') || document.querySelector('input[name=id]').value;// edit quiz uses cmid
+    // the body classList includes cmid-THEID. Try extracting that.
+    let quizId = null;
+    document.body.classList.forEach(x => {
+        let match = /^cmid-(\d+)$/.exec(x);
+        if (match) {
+            quizId = match[1];
+        }
+    });
+    if (quizId === null) {
+        quizId = searchParams.get('id') || searchParams.get('cmid') || searchParams.get('q') || document.querySelector('input[name=id]').value;// edit quiz uses cmid
+    }
 
     function go(path, search) {
         window.location = window.location.origin + path + search;
