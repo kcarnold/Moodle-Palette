@@ -741,6 +741,31 @@
 
     }
 
+    // Inject export-one button into edit-quiz page
+    if (window.location.pathname === '/mod/quiz/edit.php') {
+        // Get all quiz question "activities"
+        document.querySelectorAll('.mod-quiz-edit-content a[href*="question.php"]').forEach(questionLink => {
+            // Example link: https://moodle.calvin.edu/question/question.php?cmid=1491697&id=8120072
+            let questionId = new URL(questionLink.href).searchParams.get('id');
+            let cmid = new URL(questionLink.href).searchParams.get('cmid');
+            let row = questionLink.closest('.activity');
+            let actionsSpan = row.querySelector('.actions');
+            let exportButton = document.createElement('button');
+            exportButton.textContent = ">";
+            actionsSpan.appendChild(exportButton);
+            exportButton.addEventListener('click', async (event) => {
+                event.preventDefault();
+                // export-one link looks like
+                // https://moodle.calvin.edu/question/exportone.php?cmid=1491697&id=8120072&sesskey=SFoM5bsDEQ
+                let exportUrl = `/question/exportone.php?cmid=${cmid}&id=${questionId}&sesskey=${window.M.cfg.sesskey}`;
+                //let response = await fetch(exportUrl);
+                //let text = await response.text();
+                window.location = exportUrl;
+            }, false);
+        });
+    }
+
+
     function getMoodleTimeValue(doc, baseName) {
         let year = doc.querySelector(`[name="${baseName}[year]"]`).value;
         let month = doc.querySelector(`[name="${baseName}[month]"]`).value;
