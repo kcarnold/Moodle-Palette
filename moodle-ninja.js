@@ -744,7 +744,7 @@
     // Inject export-one button into edit-quiz page
     if (window.location.pathname === '/mod/quiz/edit.php') {
         // Get all quiz question "activities"
-        document.querySelectorAll('.mod-quiz-edit-content a[href*="question.php"]').forEach(questionLink => {
+        document.querySelectorAll('.mod-quiz-edit-content a[href*="/question.php"]').forEach(questionLink => {
             // Example link: https://moodle.calvin.edu/question/question.php?cmid=1491697&id=8120072
             let questionId = new URL(questionLink.href).searchParams.get('id');
             let cmid = new URL(questionLink.href).searchParams.get('cmid');
