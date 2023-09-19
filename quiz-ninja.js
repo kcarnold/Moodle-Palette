@@ -280,20 +280,20 @@
         if (!match) return;
         let digit = match[1];
         let whichRubricItem = digit - 1;
-        
+
         // Grab the rubric items from the question text
         let rubricItems = [];
-        document.querySelector('.editor_atto_content').closest('.que').querySelector('.qtext').querySelectorAll('li').forEach((li) => {
+        event.target.closest('.que').querySelector('.qtext').querySelectorAll('li').forEach((li) => {
             let inputBox = li.querySelector('input');
             if (!inputBox) return;
             let curIndex = rubricItems.length;
             let checked = inputBox.checked;
             let text = li.textContent.trim();
-            rubricItems.push({text, checked});
             if (curIndex === whichRubricItem) {
                 // Toggle the checked state
-                inputBox.checked = !checked;
+                inputBox.checked = checked = !checked;
             }
+            rubricItems.push({text, checked});
         });
 
         // Copy the rubric to the clipboard
@@ -301,13 +301,16 @@
             return (item.checked ? "☑️" : "🔲") + " " + item.text;
         }).join("\n");
         navigator.clipboard.writeText(rubricText);
+
+        event.preventDefault();
+        return false;
     }
 
     // only fire for manual grading URLs: report.php, mode=grading
     if (window.location.pathname === "/mod/quiz/report.php" && searchParams.get('mode') === "grading") {
         // This is a manual grading page
         document.querySelectorAll('.editor_atto_content').forEach(x => {
-            x.addEventListener('keyup ', editorKeypress)
+            x.addEventListener('keydown', editorKeypress);
         })
     }
 
