@@ -229,7 +229,9 @@
     document.addEventListener('focusin', function(e) {
         if (e.target.classList.contains('editor_atto_content')) {
             lastFocusedEditor = e.target;
-            window.global.hotkeys.filter = _event => true; // HACK: turn off hotkey filtering for input boxes.
+            if (window.global && window.global.hotkeys) { // guard in case ninja not yet loaded
+                window.global.hotkeys.filter = _event => true; // HACK: turn off hotkey filtering for input boxes.
+            }
         }
     });
 
