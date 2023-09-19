@@ -269,6 +269,46 @@
         points.focus();
     }
 
+    // Check rubric items using keypress
+    function editorKeypress(event) {
+        if (!event.altKey) return;
+        let code = event.code;
+        // Does it match "DigitX"?
+        let match = /^Digit(\d)$/.exec(code);
+        if (!match) return;
+        let digit = match[1];
+        let whichRubricItem = digit - 1;
+        
+        // Grab the rubric items from the question text
+        let rubricItems = [];
+        document.querySelector('.editor_atto_content').closest('.que').querySelector('.qtext').querySelectorAll('li').forEach((li) => {
+            let inputBox = li.querySelector('input');
+            if (!inputBox) return;
+            let curIndex = rubricItems.length;
+            let checked = inputBox.checked;
+            let text = li.textContent.trim();
+            rubricItems.push({text, checked});
+            if (curIndex === whichRubricItem) {
+                // Toggle the checked state
+                inputBox.checked = !checked;
+            }
+        });
+
+        // Copy the rubric to the clipboard
+        let rubricText = rubricItems.map((item) => {
+            return (item.checked ? "☑️" : "🔲") + " " + item.text;
+        }).join("\n");
+        navigator.clipboard.writeText(rubricText);
+    }
+
+    // only fire for manual grading URLs: report.php, mode=grading
+    if (window.location.pathname === "/mod/quiz/report.php" && searchParams.get('mode') === "grading") {
+        // This is a manual grading page
+        document.querySelectorAll('.editor_atto_content').forEach(x => {
+            x.addEventListener('keyup ', editorKeypress)
+        })
+    }
+
     // Autofocus search box.
     function autofocusSearchBox() {
         let elt = document.querySelector('#id_override input[data-fieldtype="autocomplete"]');
