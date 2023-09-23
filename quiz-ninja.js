@@ -275,11 +275,16 @@
     function editorKeypress(event) {
         if (!event.altKey) return;
         let code = event.code;
-        // Does it match "DigitX"?
-        let match = /^Digit(\d)$/.exec(code);
-        if (!match) return;
-        let digit = match[1];
-        let whichRubricItem = digit - 1;
+        let toMark;
+        if (event.code === 'Equal') {
+            toMark = 'all';
+        } else {
+            // Does it match "DigitX"?
+            let match = /^Digit(\d)$/.exec(code);
+            if (!match) return;
+            let digit = match[1];
+            toMark = digit - 1;
+        }
 
         // Grab the rubric items from the question text
         let rubricItems = [];
@@ -289,7 +294,7 @@
             let curIndex = rubricItems.length;
             let checked = inputBox.checked;
             let text = li.textContent.trim();
-            if (curIndex === whichRubricItem) {
+            if (toMark === 'all' || curIndex === toMark) {
                 // Toggle the checked state
                 inputBox.checked = checked = !checked;
             }
