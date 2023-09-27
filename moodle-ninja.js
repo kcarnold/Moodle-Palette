@@ -360,6 +360,33 @@
             id: "Confusions",
             title: "Get Confusions",
             handler: async () => {
+                // make a floating window to display the results
+                let results = document.createElement('div');
+                results.style.position = "fixed";
+                results.style.top = "0";
+                results.style.right = "0";
+                results.style.width = "25%";
+                results.style.height = "25%";
+                results.style.backgroundColor = "white";
+                results.style.zIndex = "10000";
+                results.style.overflow = "scroll";
+                results.style.padding = "1em";
+                results.style.border = "1px solid black";
+                results.style.boxShadow = "0 0 10px black";
+                results.style.fontSize = "small";
+                results.style.whiteSpace = "pre-wrap";
+
+                let closeBtn = document.createElement('button');
+                closeBtn.textContent = "Close";
+                closeBtn.style.position = "absolute";
+                closeBtn.style.top = "0";
+                closeBtn.style.right = "0";
+                closeBtn.addEventListener('click', () => {results.remove();});
+                results.appendChild(closeBtn);
+                
+                document.body.appendChild(results);
+
+
                 // get text
                 let text = prompt("Instructions?");
                 // construct openai request
@@ -402,7 +429,7 @@
                 console.log(result);
                 let response = result.choices[0].message.content;
                 // display response
-                alert(response);
+                results.textContent = response;
             }
         }]
     );
