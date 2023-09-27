@@ -354,6 +354,58 @@
         }
 
 
+    addTree(
+        {id: "AI", title: "Moodle Copilot"},
+        [{
+            id: "Confusions",
+            title: "Get Confusions",
+            handler: async () => {
+                // get text
+                let text = prompt("Instructions?");
+                // construct openai request
+                // get API key from local storage
+                let apiKey = localStorage.getItem('openai-api-key');
+                if (!apiKey) {
+                    apiKey = prompt("OpenAI API Key").trim();
+                    localStorage.setItem('openai-api-key', apiKey);
+                }
+                // construct request
+                let request = {
+                    "model": "gpt-3.5-turbo",
+                    "messages": [
+                      {
+                        "role": "system",
+                        "content": "What clarification questions might students have about these instructions?"
+                      },
+                      {
+                        "role": "user",
+                        "content": text
+                      }
+                    ],
+                    "temperature": .7,
+                    "max_tokens": 2048,
+                    "top_p": 1,
+                    "frequency_penalty": 0,
+                    "presence_penalty": 0
+                  };
+                // send request to api.openai.com
+                let result = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(request)
+                });
+                result = await result.json();
+                // get response
+                console.log(result);
+                let response = result.choices[0].message.content;
+                // display response
+                alert(response);
+            }
+        }]
+    );
 
     ninjaData.push({
         id: "BulkOverride",
