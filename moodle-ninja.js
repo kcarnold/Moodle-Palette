@@ -341,8 +341,23 @@
                             alert("Couldn't find current activity in activity directory.");
                             return;
                         }
-                        let nextActivity = activityDirectoryFlat[currentActivityIndex + 1];
-                        if (!nextActivity) {
+                        function slugify(s) {
+                            return s.replace(/[^a-zA-Z]/g, '');
+                        }
+                        let currentActivitySlug = slugify(activityDirectoryFlat[currentActivityIndex].title);
+                        currentActivityIndex++;
+                        let matched = false, nextActivity;
+                        while (currentActivityIndex < activityDirectoryFlat.length - 1) {
+                            nextActivity = activityDirectoryFlat[currentActivityIndex];
+                            // Skip activities that don't match the slug
+                            if (slugify(nextActivity.title) === currentActivitySlug) {
+                                matched = true;
+                                break;
+                            }
+                            currentActivityIndex++;
+                        }
+
+                        if (!matched) {
                             alert("No next activity.");
                             return;
                         }
@@ -383,7 +398,7 @@
                 closeBtn.style.right = "0";
                 closeBtn.addEventListener('click', () => {results.remove();});
                 results.appendChild(closeBtn);
-                
+
                 document.body.appendChild(results);
 
 
