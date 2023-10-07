@@ -181,6 +181,12 @@
 
     async function showRaw(href) {
         let panel = document.querySelector('[data-region="review-panel"]');
+        // Cleanup any object urls to avoid memory leaks.
+        panel.querySelectorAll('iframe').forEach(x => {
+            if (x.src.startsWith('blob:')) {
+                URL.revokeObjectURL(x.src);
+            }
+        });
         panel.innerHTML = '';
         let response = await fetch(href);
         //let responseText = await response.text();
