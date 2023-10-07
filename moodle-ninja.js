@@ -778,7 +778,9 @@
         if (!elt) return;
         elt.setAttribute('size', '40');
         elt.querySelectorAll("option").forEach(x => {
-            if (x.textContent.match(/\(0\)$/)) x.style.color = 'red'
+            if (x.textContent.match(/\(0\)$/)) x.style.color = 'red';
+            if (x.textContent.match(/\(1\)$/)) x.style.color = 'green';
+
         });
     }
     hackGroupSelect();
