@@ -128,6 +128,18 @@
             title: "Cleanup Manual Grading",
             handler: () => {
                 document.querySelectorAll('.qtype_essay_editor.qtype_essay_response.readonly').forEach(x => {x.style.minHeight=''});
+                // Put all correct answers in a collapsed details element
+                document.querySelectorAll('.que.correct').forEach(x => {
+                    let wrapper = document.createElement('details');
+                    let header = x.previousElementSibling;
+                    if (!header) return;
+                    header.style.display = 'inline';
+                    x.parentNode.insertBefore(wrapper, header);
+                    let summary = document.createElement('summary');
+                    summary.appendChild(header)
+                    wrapper.appendChild(summary);
+                    wrapper.appendChild(x);
+                  });
             }
         },
         {
