@@ -203,7 +203,7 @@
         handler: () => {
             // Get all non-empty previous responses
             let prevResponses = new Map();
-            for (let attempt of document.querySelectorAll('.que.essay')) {
+            for (let attempt of document.querySelectorAll('.que.essay, .que.shortanswer')) {
                 let editor = attempt.querySelector('.editor_atto_content');
                 let text = editor.textContent.trim();
                 if (text === "") continue;
@@ -283,11 +283,11 @@
             return;
         }
         editor.innerHTML = response.html;
-        let points = editor.closest('.que.essay').querySelector('input[name$="-mark"]');
+        let points = editor.closest('.que').querySelector('input[name$="-mark"]');
         points.value = response.points;
 
         // Need to click the "code" button off and on to get the HTML change to save.
-        let codeIcon = editor.closest('.que.essay').querySelector('.icon.fa-code');
+        let codeIcon = editor.closest('.que').querySelector('.icon.fa-code');
         codeIcon.click();
         setTimeout(function() { codeIcon.click(); }, .25*1000);
 
