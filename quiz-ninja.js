@@ -147,7 +147,7 @@
             title: "Go next ungraded manual feedback",
             handler: () => {
                 // Get all non-empty previous responses
-                for (let attempt of document.querySelectorAll('.que.essay')) {
+                for (let attempt of document.querySelectorAll('.que')) {
                     let pointsBox = attempt.querySelector('input[name$="-mark"]');
                     if (pointsBox && pointsBox.value.trim() === "") {
                         pointsBox.focus();
@@ -203,7 +203,7 @@
         handler: () => {
             // Get all non-empty previous responses
             let prevResponses = new Map();
-            for (let attempt of document.querySelectorAll('.que.essay, .que.shortanswer')) {
+            for (let attempt of document.querySelectorAll('.que')) {
                 let editor = attempt.querySelector('.editor_atto_content');
                 let text = editor.textContent.trim();
                 if (text === "") continue;
