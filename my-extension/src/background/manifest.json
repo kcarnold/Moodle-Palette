@@ -1,0 +1,16 @@
+{
+  "name": "my-extension",
+  "version": "1.0.0",
+  "manifest_version": 2,
+  "description": "My browser extension",
+  "permissions": [
+    "tabs",
+    "activeTab"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  }
+}
