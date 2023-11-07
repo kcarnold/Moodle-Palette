@@ -2,11 +2,12 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "noEmitOnError": false
   },
   "include": [
-    "src/**/*"
+    "**/*"
   ]
 }
