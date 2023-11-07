@@ -214,20 +214,21 @@ import {NinjaKeys} from "ninja-keys";
         title: "Save and Show Next",
         //hotkey: "cmd-opt-s",
         parent: "Submission",
-        handler: () => { document.querySelector('[name="saveandshownext"]').click(); }
+        handler: () => { (document.querySelector('[name="saveandshownext"]') as HTMLElement).click(); }
     });
     ninjaData.push({
         id: "Reset",
         title: "Reset Grading Form",
         parent: "Submission",
+        // @ts-ignore
         handler: () => { window.$(document).trigger('reset'); }
     });
 
-    function showAndHighlightRaw(tag) {
+    function showAndHighlightRaw(tag: HTMLAnchorElement) {
         showRaw(tag.href);
-        document.querySelectorAll('.fileuploadsubmission a').forEach(x => {
-            x.style.fontWeight = 'normal';
-        })
+        document.querySelectorAll('.fileuploadsubmission a').forEach((x) => {
+            (x as HTMLElement).style.fontWeight = 'normal';
+        });
         tag.style.fontWeight = 'bold';
     }
 
@@ -251,7 +252,7 @@ import {NinjaKeys} from "ninja-keys";
 
     function rubricNumbers(parentNode) {
         for (let criterion of document.querySelectorAll("#advancedgrading-criteria tr.criterion")) {
-            let scoreElt = criterion.querySelector('.score input');
+            let scoreElt = criterion.querySelector('.score input') as HTMLInputElement;
             let outOf = criterion.querySelector('.score div').textContent;
             scoreElt.type = 'number';
             scoreElt.min = "0";
@@ -312,7 +313,7 @@ import {NinjaKeys} from "ninja-keys";
                 {
                     title: "Show full feedback",
                     handler: () => {
-                        document.querySelectorAll('input[id^=feedback][disabled]').forEach(x => {x.closest('td').style.textAlign = "left"; x.outerHTML = x.value; } )
+                        document.querySelectorAll('input[id^=feedback][disabled]').forEach((x: HTMLInputElement) => {x.closest('td').style.textAlign = "left"; x.outerHTML = x.value; } )
                     }
                 }
             ]
@@ -353,7 +354,7 @@ import {NinjaKeys} from "ninja-keys";
                             return;
                         }
                         // Go to the edit page for the next activity.
-                        window.location = `/course/modedit.php?update=${nextActivity.id}`;
+                        window.location.href = `/course/modedit.php?update=${nextActivity.id}`;
                     }
                 }
             ])
@@ -433,6 +434,7 @@ import {NinjaKeys} from "ninja-keys";
                 result = await result.json();
                 // get response
                 console.log(result);
+                // @ts-ignore
                 let response = result.choices[0].message.content;
                 // display response
                 results.textContent = response;
@@ -471,6 +473,7 @@ import {NinjaKeys} from "ninja-keys";
                     },
                     "referrer": `https://moodle.calvin.edu/mod/quiz/overrideedit.php?action=adduser&cmid=${quizId}`,
                     // "body": `action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&timeclose%5Bday%5D=9&timeclose%5Bmonth%5D=12&timeclose%5Byear%5D=2022&timeclose%5Bhour%5D=23&timeclose%5Bminute%5D=59&timeclose%5Benabled%5D=1&timelimit%5Bnumber%5D=40&timelimit%5Btimeunit%5D=60&timelimit%5Benabled%5D=1&attempts=1&submitbutton=Save`,
+                    // @ts-ignore
                     "body": `action=adduser&cmid=${quizId}&sesskey=${window.M.cfg.sesskey}&_qf__quiz_override_form=1&mform_isexpanded_id_override=1&userid=${userId}&password=&attempts=0&submitbutton=Save`,
                     "method": "POST",
                     "mode": "cors"
@@ -501,6 +504,7 @@ import {NinjaKeys} from "ninja-keys";
          * Returns a map from email to date.
          */
         /* get the response CSV */
+        // @ts-ignore
         let url = `/mod/quiz/report.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${quizId}&mode=overview&attempts=enrolled_with&onlygraded=&onlyregraded=&slotmarks=1`;
         let gradesJSON = await fetch(url);
         let grades = await gradesJSON.json();
@@ -532,6 +536,7 @@ import {NinjaKeys} from "ninja-keys";
          */
 
         /** get the submission times from the log */
+        // @ts-ignore
         let url = `/report/log/index.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${courseId}&modid=${moduleId}&modaction=c&chooselog=1&logreader=logstore_standard`;
         let response = await fetch(url);
         let data = await response.json();
@@ -607,15 +612,16 @@ import {NinjaKeys} from "ninja-keys";
         for (let userRow of userRows) {
             let email = userRow.querySelector('.email').textContent; // should also be .c3
             // due date column is only present if different students have different due dates
-            let dueDate = userRow.querySelector('.duedate')?.textContent; // yay, optional chaining
-            if (!dueDate) {
+            let dueDateStr = userRow.querySelector('.duedate')?.textContent; // yay, optional chaining
+            let dueDate;
+            if (!dueDateStr) {
                 if (!defaultDueDate) {
                     defaultDueDate = prompt("What is the due date for this assignment? (e.g. 2021-03-31 23:59:59)");
                     defaultDueDate = new Date(defaultDueDate);
                 }
                 dueDate = defaultDueDate;
             } else {
-                dueDate = new Date(dueDate);
+                dueDate = new Date(dueDateStr);
             }
 
             // Loop through each activity, count how many days late each one is.
@@ -677,6 +683,7 @@ import {NinjaKeys} from "ninja-keys";
             // Get just the date part of the date.
             let dayOf = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
             // Can't use `.includes` because it doesn't properly compare Date objects.
+            // @ts-ignore
             if (!exceptionDates.some(x => x - dayOf === 0)) {
                 let day = currentDate.getDay();
                 // day 0 is Sunday, day 6 is Saturday
@@ -750,7 +757,7 @@ import {NinjaKeys} from "ninja-keys";
         for (let userRow of userRows) {
             let email = userRow.querySelector('.email').textContent; // should also be .c3
 
-            let linkWithUserId = userRow.querySelector('a[href*="user/view.php"]');
+            let linkWithUserId = userRow.querySelector('a[href*="user/view.php"]') as HTMLAnchorElement;
             let userId = new URL(linkWithUserId.href).searchParams.get('id');
             userIdToEmail.set(userId, email);
         }
@@ -774,7 +781,7 @@ import {NinjaKeys} from "ninja-keys";
     function hackReviewOptions() {
         document.querySelectorAll('#id_reviewoptionshdr [data-groupname]').forEach(gg => {
             gg.querySelector('p').addEventListener('dblclick', () => {
-                gg.querySelectorAll('fieldset input[type="checkbox"]').forEach(x => {x.click();})
+                gg.querySelectorAll('fieldset input[type="checkbox"]').forEach((x: HTMLInputElement) => {x.click();})
             }, false);
         });
     }
@@ -803,7 +810,7 @@ import {NinjaKeys} from "ninja-keys";
 
                 // construct a form submission
                 let form = new FormData();
-                doc.querySelectorAll('#manualgradingform input').forEach(inputElement => {
+                doc.querySelectorAll('#manualgradingform input').forEach((inputElement: HTMLInputElement) => {
                     let name = inputElement.name;
                     let value = inputElement.value;
                     // If the input element name ends with -mark, replace it with the grade.
@@ -831,7 +838,7 @@ import {NinjaKeys} from "ninja-keys";
     // Inject export-one button into edit-quiz page
     if (window.location.pathname === '/mod/quiz/edit.php') {
         // Get all quiz question "activities"
-        document.querySelectorAll('.mod-quiz-edit-content a[href*="/question.php"]').forEach(questionLink => {
+        document.querySelectorAll('.mod-quiz-edit-content a[href*="/question.php"]').forEach((questionLink: HTMLAnchorElement) => {
             // Example link: https://moodle.calvin.edu/question/question.php?cmid=1491697&id=8120072
             let questionId = new URL(questionLink.href).searchParams.get('id');
             let cmid = new URL(questionLink.href).searchParams.get('cmid');
@@ -844,10 +851,11 @@ import {NinjaKeys} from "ninja-keys";
                 event.preventDefault();
                 // export-one link looks like
                 // https://moodle.calvin.edu/question/exportone.php?cmid=1491697&id=8120072&sesskey=SFoM5bsDEQ
+                // @ts-ignore
                 let exportUrl = `/question/exportone.php?cmid=${cmid}&id=${questionId}&sesskey=${window.M.cfg.sesskey}`;
                 //let response = await fetch(exportUrl);
                 //let text = await response.text();
-                window.location = exportUrl;
+                window.location.href = exportUrl;
             }, false);
         });
     }
