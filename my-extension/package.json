@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "copy-webpack-plugin": "^11.0.0",
     "ninja-keys": "^1.2.2",
     "typescript": "^4.3.5"
   },

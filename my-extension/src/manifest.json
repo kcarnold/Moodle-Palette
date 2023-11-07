@@ -12,7 +12,7 @@
   "content_scripts": [
     {
       "matches": ["https://moodle.calvin.edu/*"],
-      "js": ["content_scripts/content_script.js"]
+      "js": ["dist/content_scripts/content_script.js"]
     }
   ]
 }
