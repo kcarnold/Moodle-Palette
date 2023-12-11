@@ -770,6 +770,31 @@
         });
     }
 
+    if (window.location.pathname.startsWith("/grade/import/")) {
+        ninjaData.push({
+            id: "MatchImportNames",
+            title: "Match Import Names",
+            handler: () => {
+                document.querySelectorAll('#id_general_map select').forEach(sel => {
+                    if (sel.labels.length !== 1) {
+                    console.log("Missing or inconsistent label for", sel);
+                    return;
+                    }
+                    let label = sel.labels[0].textContent.trim();
+                    let opts = (
+                    [...sel.querySelectorAll('[label="Grade items"] option')]
+                    .filter(x => x.textContent.endsWith(label))
+                    );
+                    if (opts.length !== 1) {
+                    console.log("No match or inconsistent match for", label);
+                    return;
+                    }
+                    sel.value = opts[0].value;
+                })
+            }
+        });
+    }
+
     function scrapeUserIdToEmailMap() {
         let userIdToEmail = new Map();
         let userRows = document.querySelectorAll('.gradingtable table tbody tr');
