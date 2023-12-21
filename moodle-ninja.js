@@ -768,6 +768,42 @@
                 await creditAllAttempts(activities, userIdToEmail);
             }
         });
+
+        ninjaData.push({
+            id: "CreditAnySubmissions",
+            title: "Give credit for any submissions",
+            handler: async () => {
+                // loop through all grading rows
+                for (let userRow of document.querySelectorAll('.gradingtable table tbody tr')) {
+                    // If the assignment was submitted, there's a .submissionstatussubmitted element.
+                    if (!userRow.querySelector('.submissionstatussubmitted')) {
+                        continue;
+                    }
+                    let quickGradeInput = userRow.querySelector('input[name^=quickgrade]');
+                    if (quickGradeInput) {
+                        // The maximum grade is the text just after the text box
+                        let outOfText = quickGradeInput.nextSibling.textContent;
+                        // extract just the number out of that.
+                        let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
+                        const grade = maxGrade;
+                        fillInTextboxIfDifferent(quickGradeInput, grade.toFixed(1));
+                    } else {
+                        // Sometimes the .quickgrade is a select box.
+                        quickGradeInput = userRow.querySelector('select[name^=quickgrade]');
+                        if (quickGradeInput) {
+                            // Select the <option> with the highest value.
+                            let options = [...quickGradeInput.querySelectorAll('option')];
+                            let values = options.map(x => parseFloat(x.value));
+                            let maxGrade = Math.max(...values);
+                            quickGradeInput.value = maxGrade;
+                            // trigger a change event
+                            quickGradeInput.dispatchEvent(new Event('change'));
+                        }
+                    }
+
+                }
+            }
+        })
     }
 
     if (window.location.pathname.startsWith("/grade/import/")) {
