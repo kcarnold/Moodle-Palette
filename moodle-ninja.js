@@ -199,6 +199,9 @@
             }
         });
         panel.innerHTML = '';
+
+        if (!href) return; // null can be used to clear the view without loading another thing.
+
         let response = await fetch(href);
         //let responseText = await response.text();
         let responseBlob = await response.blob();
@@ -271,8 +274,8 @@
                 showAndHighlightRaw(tag)
                 shownTag = tag;
             }
-
         });
+        if (!shownTag) showRaw(null);
     }
 
     function rubricNumbers(parentNode) {
@@ -383,7 +386,7 @@
                     }
                 }
             ])
-        }
+    }
 
 
     addTree(
@@ -432,21 +435,21 @@
                 let request = {
                     "model": "gpt-3.5-turbo",
                     "messages": [
-                      {
-                        "role": "system",
-                        "content": "What clarification questions might students have about these instructions?"
-                      },
-                      {
-                        "role": "user",
-                        "content": text
-                      }
+                        {
+                            "role": "system",
+                            "content": "What clarification questions might students have about these instructions?"
+                        },
+                        {
+                            "role": "user",
+                            "content": text
+                        }
                     ],
                     "temperature": .7,
                     "max_tokens": 2048,
                     "top_p": 1,
                     "frequency_penalty": 0,
                     "presence_penalty": 0
-                  };
+                };
                 // send request to api.openai.com
                 let result = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
@@ -475,7 +478,7 @@
 
             // activities of type quiz
             let quizzes = activityDirectory.flatMap(category =>
-                category.activities.filter(x => x.type === "quiz"));
+                                                    category.activities.filter(x => x.type === "quiz"));
             let activityTitles = quizzes.map(x => x.title).join("\n");
             if (!confirm(`This will override the due date for the following quizzes:\n${activityTitles}\n\nContinue?`)) return;
 
@@ -813,17 +816,17 @@
             handler: () => {
                 document.querySelectorAll('#id_general_map select').forEach(sel => {
                     if (sel.labels.length !== 1) {
-                    console.log("Missing or inconsistent label for", sel);
-                    return;
+                        console.log("Missing or inconsistent label for", sel);
+                        return;
                     }
                     let label = sel.labels[0].textContent.trim();
                     let opts = (
-                    [...sel.querySelectorAll('[label="Grade items"] option')]
-                    .filter(x => x.textContent.endsWith(label))
+                        [...sel.querySelectorAll('[label="Grade items"] option')]
+                        .filter(x => x.textContent.endsWith(label))
                     );
                     if (opts.length !== 1) {
-                    console.log("No match or inconsistent match for", label);
-                    return;
+                        console.log("No match or inconsistent match for", label);
+                        return;
                     }
                     sel.value = opts[0].value;
                 })
