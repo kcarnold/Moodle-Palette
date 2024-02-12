@@ -45,17 +45,17 @@
             let secId = section.getAttribute('id');
             let labeledByElt = section.getAttribute('aria-labeled-by') || section.getAttribute('aria-labelledby');
             if (!labeledByElt) console.warn("Couldn't find title for", section);
-            let secTitle = document.getElementById(labeledByElt).textContent;
-            let activities = [...section.querySelectorAll('ul.section > li.activity .activityinstance')].map(activityInstance => {
+            let secTitle = document.getElementById(labeledByElt).textContent.trim();
+            let activities = [...section.querySelectorAll('ul.section > li.activity .activity-instance')].map(activityInstance => {
                 if (!activityInstance) return;
-                let titleElt = activityInstance.querySelector('.instancename');
+                let titleElt = activityInstance.querySelector('.activityname');
                 if (!titleElt) {
                     console.warn("OOPS, missing title", activityInstance);
-                    alert("Missing title for activity in " + secTitle);
+                    //alert("Missing title for activity in " + secTitle);
                     // intentionally crash rather than give corrupt data.
                 }
-                let title = titleElt.firstChild.textContent;
-                let linkNode = titleElt.closest('a');
+                let title = titleElt.querySelector('.instancename').textContent;
+                let linkNode = titleElt.querySelector('a');
                 if (!linkNode) {
                     console.warn("OOPS, missing link", activityInstance, title);
                 }
