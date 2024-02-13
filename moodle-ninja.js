@@ -892,7 +892,7 @@
         const curActivityId = new URL(window.location.href).searchParams.get('id');
         const comments = JSON.parse(localStorage.getItem(`grading-comments-${curActivityId}`));
         if (comments) {
-            // Watch for input events on 
+            // Watch for input events on
             function editorChanged(event) {
                 // Get the text immediately before the cursor.
                 // Start by getting the current selection.
@@ -912,33 +912,15 @@
                 id: "ShowQuickGradeComments",
                 title: "Show Quick-Grade Comments",
                 handler: () => {
-                    let commentsDiv = document.createElement('div');
-                    commentsDiv.style.position = "fixed";
-                    commentsDiv.style.top = "0";
-                    commentsDiv.style.right = "0";
-                    commentsDiv.style.width = "25%";
-                    commentsDiv.style.height = "35%";
-                    commentsDiv.style.backgroundColor = "white";
-                    commentsDiv.style.zIndex = "10000";
-                    commentsDiv.style.overflow = "scroll";
-                    commentsDiv.style.padding = "5px";
-                    commentsDiv.style.border = "1px solid black";
-                    commentsDiv.style.boxShadow = "0 0 10px black";
-                    commentsDiv.style.fontSize = "small"
-                    commentsDiv.style.whiteSpace = "pre-wrap";
-
-                    let closeBtn = document.createElement('button');
-                    closeBtn.textContent = "Close";
-                    closeBtn.style.position = "absolute";
-                    closeBtn.style.top = "0";
-                    closeBtn.style.right = "0";
-                    closeBtn.addEventListener('click', () => {
-                        commentsDiv.remove();
-                    })
-                    
-                    commentsDiv.innerHTML = comments.join('\n\n');
-                    commentsDiv.appendChild(closeBtn);
-                    document.body.appendChild(commentsDiv);
+                    // open a popup with the comments
+                    let popup = window.open('', 'quick-grade-comments', 'width=400,height=600');
+                    popup.document.body.innerHTML = comments.join('\n\n');
+                    popup.document.body.style.backgroundColor = '#f5f5f5';
+                    let styleElt = popup.document.createElement('style')
+                    styleElt.textContent = `
+                        h1, h2, h3, h4, h5, h6 { margin: 0; }
+                    `;
+                    popup.document.head.appendChild(styleElt);
                 }
             });
         }
