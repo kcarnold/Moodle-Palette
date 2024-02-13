@@ -871,6 +871,81 @@
     hackReviewOptions();
 
 
+    // Scrape quick-grade comments
+    // from URLs like https://moodle.calvin.edu/mod/assign/view.php?id=1744265&action=grading
+    if (window.location.pathname === '/mod/assign/view.php' && window.location.search.includes('action=grading')) {
+        scrapeQuickGradeComments();
+    }
+
+    function scrapeQuickGradeComments() {
+        const curActivityId = new URL(window.location.href).searchParams.get('id');
+        const gradingTable = document.querySelector('.gradingtable');
+        if (!gradingTable) { return; }
+        const comments = [...gradingTable.querySelectorAll('[id^=quickgrade_comments]')].map(x => x.value);
+
+        // store in local storage
+        localStorage.setItem(`grading-comments-${curActivityId}`, JSON.stringify(comments));
+    }
+
+    // Add a Ninja action to show all quick-grade comments for the current activity
+    if (window.location.pathname === '/mod/assign/view.php') {
+        const curActivityId = new URL(window.location.href).searchParams.get('id');
+        const comments = JSON.parse(localStorage.getItem(`grading-comments-${curActivityId}`));
+        if (comments) {
+            // Watch for input events on 
+            function editorChanged(event) {
+                // Get the text immediately before the cursor.
+                // Start by getting the current selection.
+                let selection = window.getSelection();
+                if (selection.rangeCount === 0) return;
+
+                // For now just get the text immediately before the cursor.
+                let range = selection.getRangeAt(0);
+                let text = range.startContainer.textContent.slice(0, range.startOffset);
+                console.log(text);
+
+                console.log(event)
+            }
+            //document.querySelector('#id_assignfeedbackcomments_editoreditable').addEventListener('input', editorChanged, false);
+
+            ninjaData.push({
+                id: "ShowQuickGradeComments",
+                title: "Show Quick-Grade Comments",
+                handler: () => {
+                    let commentsDiv = document.createElement('div');
+                    commentsDiv.style.position = "fixed";
+                    commentsDiv.style.top = "0";
+                    commentsDiv.style.right = "0";
+                    commentsDiv.style.width = "25%";
+                    commentsDiv.style.height = "35%";
+                    commentsDiv.style.backgroundColor = "white";
+                    commentsDiv.style.zIndex = "10000";
+                    commentsDiv.style.overflow = "scroll";
+                    commentsDiv.style.padding = "5px";
+                    commentsDiv.style.border = "1px solid black";
+                    commentsDiv.style.boxShadow = "0 0 10px black";
+                    commentsDiv.style.fontSize = "small"
+                    commentsDiv.style.whiteSpace = "pre-wrap";
+
+                    let closeBtn = document.createElement('button');
+                    closeBtn.textContent = "Close";
+                    closeBtn.style.position = "absolute";
+                    closeBtn.style.top = "0";
+                    closeBtn.style.right = "0";
+                    closeBtn.addEventListener('click', () => {
+                        commentsDiv.remove();
+                    })
+                    
+                    commentsDiv.innerHTML = comments.join('\n\n');
+                    commentsDiv.appendChild(closeBtn);
+                    document.body.appendChild(commentsDiv);
+                }
+            });
+        }
+    }
+
+
+
     // Inject quick-comment buttons into attempt review page
     if (window.location.pathname === '/mod/quiz/review.php') {
         let attemptId = new URL(window.location.href).searchParams.get('attempt');
