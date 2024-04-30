@@ -262,6 +262,8 @@
 
 
     function hookFileSubmissions(parentNode) {
+        console.log('hookFileSubmissions', parentNode)
+        if (!parentNode.parentNode.querySelector('.submissionstatustable')) { return; }
         let shownTag = null;
         parentNode.querySelectorAll('.fileuploadsubmission a').forEach(tag => {
             //console.log("Got node", m, "from", parentNode);
