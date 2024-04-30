@@ -779,21 +779,25 @@
                 // loop through all grading rows
                 for (let userRow of document.querySelectorAll('.gradingtable table tbody tr')) {
                     // If the assignment was submitted, there's a .submissionstatussubmitted element.
-                    if (!userRow.querySelector('.submissionstatussubmitted')) {
-                        continue;
-                    }
+                    let submitted = !!userRow.querySelector('.submissionstatussubmitted');
+                    let gradeFrac = submitted ? 1 : 0;
                     let quickGradeInput = userRow.querySelector('input[name^=quickgrade]');
                     if (quickGradeInput) {
                         // The maximum grade is the text just after the text box
                         let outOfText = quickGradeInput.nextSibling.textContent;
                         // extract just the number out of that.
                         let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
-                        const grade = maxGrade;
+                        const grade = maxGrade * gradeFrac;
                         fillInTextboxIfDifferent(quickGradeInput, grade.toFixed(1));
                     } else {
                         // Sometimes the .quickgrade is a select box.
                         quickGradeInput = userRow.querySelector('select[name^=quickgrade]');
                         if (quickGradeInput) {
+                            if (gradeFrac !== 1) {
+                                // TODO: handle this situation
+                                console.warn("Can't handle a select box for non-submitted assignments yet.");
+                                continue;
+                            }
                             // Select the <option> with the highest value.
                             let options = [...quickGradeInput.querySelectorAll('option')];
                             let values = options.map(x => parseFloat(x.value));
