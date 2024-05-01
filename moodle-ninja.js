@@ -596,9 +596,15 @@
         return earliestAttemptByUser;
     }
 
+    function stripTrailingZeros(value) {
+        // Strip trailing zeros. Also strip the decimal point if there are no digits after it.
+        return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+    }
+
     function fillInTextboxIfDifferent(textbox, value) {
+        let textBoxValue = textbox.value;
         value = "" + value; // make sure it's a string
-        if (textbox.value !== value) {
+        if (stripTrailingZeros(textbox.value) !== stripTrailingZeros(value)) {
             textbox.value = value;
             // trigger the change event
             textbox.dispatchEvent(new Event('change'));
