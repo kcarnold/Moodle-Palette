@@ -813,6 +813,25 @@
                 }
             }
         })
+
+        ninjaData.push({
+            id: "GradeFromRandom",
+            title: "Start grading at a random student",
+            handler: async () => {
+                // Get all grading rows
+                let userRows = document.querySelectorAll('.gradingtable table tbody tr');
+                // Pick a random one.
+                while (true) {
+                    let randomRow = userRows[Math.floor(Math.random() * userRows.length)];
+                    // Look for a /mod/assign/view.php link
+                    let link = randomRow.querySelector('a[href*="/mod/assign/view.php"]');
+                    if (!link) { continue; }
+                    // Go to that link.
+                    window.location.href = link.href;
+                    break;
+                }
+            }
+        })
     }
 
     if (window.location.pathname.startsWith("/grade/import/")) {
