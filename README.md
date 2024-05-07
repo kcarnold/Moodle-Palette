@@ -10,3 +10,8 @@ I’ve been hacking on the “Show Uploads” recently, because I’m grading su
 Quiz-ninja has more stuff specific to quizzes, I haven’t merged it in. Ctrl-K to launch, so I just have both running at the same time.
  
 I have a few other scripts too, it’s a hodgepodge at the moment but I’d like to clean up and merge these sometime. Probably a project for some students someday.
+
+## TODO
+
+- Make it a browser extension https://github.com/cezaraugusto/extension.js
+- Move to https://github.com/KonnorRogers/konnors-ninja-keys
