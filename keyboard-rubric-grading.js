@@ -44,7 +44,7 @@
             document.getElementById("id_grade").value = outOf;
         } else {
             // Handle rubric stuff
-            let rubric = document.querySelector('[aria-label="Rubric"]');
+            let rubric = document.querySelector('.gradingform_rubric');
             if (!rubric) return;
             let criteria = [...rubric.querySelectorAll('tr.criterion')];
             let criteriaOpts = [...criteria[criterionIdx].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
