@@ -7,10 +7,14 @@
 // @match        https://moodle.calvin.edu/mod/assign/view.php*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=calvin.edu
 // @grant        none
+// @run-at document-idle
 // ==/UserScript==
 
 (function() {
     'use strict';
+    if (window._kbdRubric) return; // Somehow this is getting run multiple times :(
+    console.log("Hooking keyboard for rubric grading.");
+    window._kbdRubric = true;
 
     // Usage:
     // 0-9: select the corresponding rubric item.
