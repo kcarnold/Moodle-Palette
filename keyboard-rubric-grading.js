@@ -6,21 +6,21 @@
 // @author       You
 // @match        https://moodle.calvin.edu/mod/assign/view.php*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=calvin.edu
-// @grant        none
+// @grant        unsafeWindow
 // @run-at document-idle
 // ==/UserScript==
 
 (function() {
     'use strict';
-    if (window._kbdRubric) return; // Somehow this is getting run multiple times :(
+    if (unsafeWindow._kbdRubric) return; // Somehow this is getting run multiple times :(
     console.log("Hooking keyboard for rubric grading.");
-    window._kbdRubric = true;
+    unsafeWindow._kbdRubric = true;
 
     // Usage:
     // 0-9: select the corresponding rubric item.
+    // f  : Give full credit on the rubric
     // >  : Save and Show Next
     // n  : Toggle sending notifications
-    // f  : Give full credit
     // R  : Reset
     // G  : filter to Requires Grading
     let criterionIdx = 0;
@@ -38,22 +38,33 @@
             let elt = document.querySelector('[data-region="configure-filters"] [name="filter"]');
             elt.value = 'requiregrading';
             elt.closest('select').dispatchEvent(new Event("change", {bubbles: true}));
-        } else if (event.key === 'f') {
-            // give full credit.
-            let outOf = document.querySelector('[for="id_grade"]').textContent.match(/Grade out of (\d+)/)[1];
-            document.getElementById("id_grade").value = outOf;
-        } else {
-            // Handle rubric stuff
+        } else if (event.key === 'f' || (event.key >= '0' && event.key <= '9')) {
             let rubric = document.querySelector('.gradingform_rubric');
             if (!rubric) return;
             let criteria = [...rubric.querySelectorAll('tr.criterion')];
-            let criteriaOpts = [...criteria[criterionIdx].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
-            console.log(event.key);
-            if (event.key >= '0' && event.key <= '9') {
-                let idx = +event.key;
-                if (idx < criteriaOpts.length) {
-                    criteriaOpts[idx].click();
-                    criterionIdx = (criterionIdx + 1) % criteria.length;
+
+            for (let i = 0; i < criteria.length; i++) {
+                let criteriaOpts = [...criteria[i].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
+                let scores = criteriaOpts.map((opt) => +opt.querySelector('.scorevalue').innerText);
+                console.log(scores);
+                if (event.key === 'f') {
+                    // give full credit.
+                    let idxMaxScore = scores.indexOf(Math.max(...scores));
+                    criteriaOpts[idxMaxScore].querySelector('input[type="radio"]').click();
+                    criterionIdx = 0;
+                } else {
+                    // Only adjust the current criterion.
+                    if (criterionIdx !== i) continue;
+                    // At this point we know that event.key is a number, since it's not f.
+                    let targetScore = +event.key;
+                    let idx = scores.indexOf(targetScore);
+                    if (idx >= 0) {
+                        // click the corresponding criterion.
+                        criteriaOpts[idx].querySelector('input[type="radio"]').click();
+                        criterionIdx = (criterionIdx + 1) % criteria.length;
+                    } else {
+                        console.error(`No score of ${targetScore} found in criterion ${criterionIdx}.`);
+                    }
                 }
             }
         }
