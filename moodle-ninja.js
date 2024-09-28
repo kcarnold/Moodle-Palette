@@ -13,6 +13,11 @@
 (function() {
     'use strict';
 
+    // Abort if we're inside a tinymce editor.
+    if (document.body.classList.contains('mce-content-body')) {
+        return;
+    }
+    
     function addTree(parent, children) {
         if (!parent.children) parent.children = [];
         ninjaData.push(parent);
