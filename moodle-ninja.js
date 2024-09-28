@@ -227,7 +227,6 @@
             iframe.srcdoc = `Click the file name to download it. (Not displaying because the response type was ${responseBlob.type}.)`;
         } else {
             //iframe.srcdoc = responseText;
-            // FIXME: should revoke this object URL sometime to avoid memory leaks.
             iframe.src = URL.createObjectURL(responseBlob);
         }
         iframe.style.width = "100%";
