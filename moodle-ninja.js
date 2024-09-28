@@ -228,6 +228,15 @@
         } else {
             //iframe.srcdoc = responseText;
             iframe.src = URL.createObjectURL(responseBlob);
+
+            // Mock the localStorage within the iframe to avoid security errors.
+            iframe.addEventListener('load', () => {
+                iframe.contentWindow.localStorage = {
+                    getItem: () => null,
+                    setItem: () => null,
+                    removeItem: () => null
+                };
+            });
         }
         iframe.style.width = "100%";
         iframe.style.height = "100%";
