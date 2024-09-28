@@ -6,7 +6,7 @@
 // @author       You
 // @match        https://moodle.calvin.edu/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=calvin.edu
-// @grant        none
+// @grant        unsafeWindow
 // @run-at document-idle
 // ==/UserScript==
 
@@ -34,6 +34,10 @@
     let activityDirectory = [];
 
     function getCourseId() {
+        const w = unsafeWindow;
+        if (w.M && w.M.cfg && w.M.cfg.courseId) {
+            return w.M.cfg.courseId
+        }
         let dataResult = document.querySelector('[data-courseid]');
         if (dataResult) {
             return dataResult.getAttribute('data-courseid');
