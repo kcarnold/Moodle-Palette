@@ -13,6 +13,10 @@
 (function() {
     'use strict';
 
+    // const OLLAMA_SERVER = "http://localhost:10000";
+    const OLLAMA_SERVER = "http://localhost:11434";
+
+
     // Abort if we're inside a tinymce editor.
     if (document.body.classList.contains('mce-content-body')) {
         return;
@@ -487,6 +491,47 @@
             }
         }]
     );
+
+    ninjaData.push({
+        id: "ClarifyPosts",
+        title: "Clarify posts using local AI",
+        handler: async () => {
+            let posts = document.querySelectorAll('.posts-container article');
+            for (let post of posts) {
+                let contentContainer = post.querySelector('.post-content-container');
+                let content = contentContainer.textContent;
+
+                let request = {
+                    "model": "llama3.1:latest",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Insert paragraph breaks in the following text. Also, bold any names mentioned. Include just the result, no explanation."
+                        },
+                        {
+                            "role": "user",
+                            "content": content
+                        }
+                    ],
+                    "stream": false,
+                };
+                let result = await fetch(`${OLLAMA_SERVER}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(request)
+                });
+                result = await result.json();
+                console.log(result);
+                let message = result.message.content;
+
+                // Render the Markdown
+                let rendered = marked.marked(message);
+                contentContainer.innerHTML = rendered;
+            }
+        }
+    });
 
     ninjaData.push({
         id: "BulkOverride",
