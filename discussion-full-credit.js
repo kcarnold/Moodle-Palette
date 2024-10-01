@@ -21,7 +21,13 @@
                 let levels = [...criterion.querySelectorAll('[type="radio"]')];
                 levels[levels.length - 1].click()
             });
-        } else if(event.key == '>') {
+        } else if (event.key == "m") {
+            // Missing (use the second radio button, corresponding to the lowest score)
+            document.querySelectorAll('.criterion [role="radiogroup"]').forEach(criterion => {
+                let levels = [...criterion.querySelectorAll('[type="radio"]')];
+                levels[1].click()
+            });
+        } else if (event.key == '>') {
             let btn = document.querySelector('.page-link[title*="proceed to the next user"]');
             if (btn) btn.click();
         }
