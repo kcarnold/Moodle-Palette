@@ -496,42 +496,57 @@
         id: "ClarifyPosts",
         title: "Clarify posts using local AI",
         handler: async () => {
-            let posts = document.querySelectorAll('.posts-container article');
-            for (let post of posts) {
-                let contentContainer = post.querySelector('.post-content-container');
-                let content = contentContainer.textContent;
-
-                let request = {
-                    "model": "llama3.1:latest",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "Insert paragraph breaks in the following text. Also, bold any names mentioned. Include just the result, no explanation."
-                        },
-                        {
-                            "role": "user",
-                            "content": content
-                        }
-                    ],
-                    "stream": false,
-                };
-                let result = await fetch(`${OLLAMA_SERVER}/api/chat`, {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(request)
-                });
-                result = await result.json();
-                console.log(result);
-                let message = result.message.content;
-
-                // Render the Markdown
-                let rendered = marked.marked(message);
-                contentContainer.innerHTML = rendered;
-            }
+            await clarifyDiscussionPosts();
         }
     });
+
+    async function clarifyDiscussionPosts() {
+        let contentContainers = document.querySelectorAll('.post-content-container');
+        for (let contentContainer of contentContainers) {
+            let origHTML = contentContainer.innerHTML;
+            let content = contentContainer.textContent;
+
+            let request = {
+                "model": "llama3.1:latest",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Insert paragraph breaks in the following text. Also, bold any names mentioned. Include just the result, no explanation."
+                    },
+                    {
+                        "role": "user",
+                        "content": content
+                    }
+                ],
+                "stream": false,
+            };
+            let result = await fetch(`${OLLAMA_SERVER}/api/chat`, {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            });
+            result = await result.json();
+            console.log(result);
+            let message = result.message.content;
+
+            // Render the Markdown
+            let rendered = marked.marked(message);
+            contentContainer.innerHTML = rendered;
+
+            // Add a details element with the original content.
+            let details = document.createElement('details');
+            let summary = document.createElement('summary');
+            summary.textContent = "Original content";
+            details.appendChild(summary);
+            let div = document.createElement('div');
+            div.innerHTML = origHTML;
+            details.appendChild(div);
+            contentContainer.appendChild(details);
+        }
+    }
+    unsafeWindow.clarifyDiscussionPosts = clarifyDiscussionPosts;
 
     ninjaData.push({
         id: "BulkOverride",
