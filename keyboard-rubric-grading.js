@@ -12,9 +12,11 @@
 
 (function() {
     'use strict';
-    if (unsafeWindow._kbdRubric) return; // Somehow this is getting run multiple times :(
-    console.log("Hooking keyboard for rubric grading.");
-    unsafeWindow._kbdRubric = true;
+
+    // Abort if we're inside a tinymce editor.
+    if (document.body.classList.contains('mce-content-body')) {
+        return;
+    }
 
     // Usage:
     // 0-9: select the corresponding rubric item.
@@ -38,7 +40,7 @@
             let elt = document.querySelector('[data-region="configure-filters"] [name="filter"]');
             elt.value = 'requiregrading';
             elt.closest('select').dispatchEvent(new Event("change", {bubbles: true}));
-        } else if (event.key === 'f' || (event.key >= '0' && event.key <= '9')) {
+        } else if (event.key === 'f' || event.key === '_' || (event.key >= '0' && event.key <= '9')) {
             let rubric = document.querySelector('.gradingform_rubric');
             if (!rubric) return;
             let criteria = [...rubric.querySelectorAll('tr.criterion')];
@@ -50,7 +52,12 @@
                 if (event.key === 'f') {
                     // give full credit.
                     let idxMaxScore = scores.indexOf(Math.max(...scores));
-                    criteriaOpts[idxMaxScore].querySelector('input[type="radio"]').click();
+                    criteriaOpts[idxMaxScore].click();
+                    criterionIdx = 0;
+                } else if (event.key === '_') {
+                    // give zero credit.
+                    let idxMinScore = scores.indexOf(Math.min(...scores));
+                    criteriaOpts[idxMinScore].click();
                     criterionIdx = 0;
                 } else {
                     // Only adjust the current criterion.
@@ -60,7 +67,7 @@
                     let idx = scores.indexOf(targetScore);
                     if (idx >= 0) {
                         // click the corresponding criterion.
-                        criteriaOpts[idx].querySelector('input[type="radio"]').click();
+                        criteriaOpts[idx].click();
                         criterionIdx = (criterionIdx + 1) % criteria.length;
                     } else {
                         console.error(`No score of ${targetScore} found in criterion ${criterionIdx}.`);
