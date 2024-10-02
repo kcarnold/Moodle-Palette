@@ -121,7 +121,7 @@
     document.body.appendChild(tag);
 
     let ninja = document.createElement('ninja-keys');
-    ninja.setAttribute('style', '--ninja-z-index: 102;'); // Get it in front of the course blocks.
+    ninja.setAttribute('style', '--ninja-z-index: 1050;'); // Get it in front of the course blocks and the discussion grader (z-index: 1040 from .layout.fullscreen)
     ninja.setAttribute('openHotkey', "cmd+p,ctrl+p");
     document.body.appendChild(ninja);
 
