@@ -216,7 +216,6 @@
         if (!href) return; // null can be used to clear the view without loading another thing.
 
         let response = await fetch(href);
-        //let responseText = await response.text();
         let responseBlob = await response.blob();
         if (responseBlob.type === "application/octet-stream") {
             // Avoid downloading it.
@@ -230,8 +229,33 @@
         if (allowedContentTypes.indexOf(responseType) === -1) {
             iframe.srcdoc = `Click the file name to download it. (Not displaying because the response type was ${responseBlob.type}.)`;
         } else {
-            //iframe.srcdoc = responseText;
-            iframe.src = URL.createObjectURL(responseBlob);
+            // If it's HTML, fix script tags that are relative to the document
+            // like src="ex03-bikeshare-wrangling_files/libs/clipboard/clipboard.min.js"
+            // to instead point to
+            // https://quarto.org/site_libs/clipboard/clipboard.min.js
+            // same for <link> tags. But be careful, we have some <link id="quarto-text-highlight-styles" href="...">
+            if (responseType === "text/html") {
+                // can't use response.text() since we already read the response. Instead, convert the blob we already have to text.
+                let responseText = await new Response(responseBlob).text();
+                let fixed = responseText.replace(/script src="([^"]+)"/g, (match, src) => {
+                    if (src.startsWith('http') || src.startsWith('/')) return match;
+                    // trim off the "libs" and everything before it.
+                    console.assert(src.match(/.*?\/libs\//), `Trying to fix ${src} but it doesn't match the pattern.`);
+                    let libPath = src.replace(/.*?\/libs\//, '');
+                    return `script src="https://quarto.org/site_libs/${libPath}"`;
+                });
+                fixed = fixed.replace(/<link([^>]+)href="([^"]+)"/g, (match, attrs, href) => {
+                    if (href.startsWith('http') || href.startsWith('/')) return match;
+                    // trim off the "libs" and everything before it.
+                    console.assert(href.match(/.*?\/libs\//), `Trying to fix ${href} but it doesn't match the pattern.`);
+                    let libPath = href.replace(/.*?\/libs\//, '');
+                    return `<link${attrs}href="https://quarto.org/site_libs/${libPath}"`;
+                });
+
+                iframe.srcdoc = fixed;
+            } else {
+                iframe.src = URL.createObjectURL(responseBlob);
+            }
 
             // Mock the localStorage within the iframe to avoid security errors.
             iframe.addEventListener('load', () => {
