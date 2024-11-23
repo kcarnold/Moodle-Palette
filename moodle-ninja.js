@@ -216,6 +216,7 @@
         if (!href) return; // null can be used to clear the view without loading another thing.
 
         let response = await fetch(href);
+        //let responseText = await response.text();
         let responseBlob = await response.blob();
         if (responseBlob.type === "application/octet-stream") {
             // Avoid downloading it.
@@ -229,42 +230,43 @@
         if (allowedContentTypes.indexOf(responseType) === -1) {
             iframe.srcdoc = `Click the file name to download it. (Not displaying because the response type was ${responseBlob.type}.)`;
         } else {
-            // If it's HTML, fix script tags that are relative to the document
-            // like src="ex03-bikeshare-wrangling_files/libs/clipboard/clipboard.min.js"
-            // to instead point to
-            // https://quarto.org/site_libs/clipboard/clipboard.min.js
-            // same for <link> tags. But be careful, we have some <link id="quarto-text-highlight-styles" href="...">
             if (responseType === "text/html") {
+                // Apply HTML content filters.
                 // can't use response.text() since we already read the response. Instead, convert the blob we already have to text.
                 let responseText = await new Response(responseBlob).text();
-                let fixed = responseText.replace(/script src="([^"]+)"/g, (match, src) => {
-                    if (src.startsWith('http') || src.startsWith('/')) return match;
-                    // trim off the "libs" and everything before it.
-                    console.assert(src.match(/.*?\/libs\//), `Trying to fix ${src} but it doesn't match the pattern.`);
-                    let libPath = src.replace(/.*?\/libs\//, '');
-                    return `script src="https://quarto.org/site_libs/${libPath}"`;
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(responseText, "text/html");
+                // Rewrite relative URLs on script and link tags like "ex03-bikeshare-wrangling_files/libs/clipboard/clipboard.min.js"
+                // to be absolute URLs sourced from https://calvin-data-science.github.io/data202/site_libs/
+                function rewriteURL(url) {
+                    if (url.startsWith('http')) return url;
+                    const libPath = url.replace(/.*?\/libs\//, '');
+                    return `https://calvin-data-science.github.io/data202/site_libs/${libPath}`;
+                }
+                doc.querySelectorAll('script').forEach(script => {
+                    if (script.src) {
+                        const fixedURL = rewriteURL(script.getAttribute('src'));
+                        console.log("Rewriting", script.src, "to", fixedURL);
+                        script.src = fixedURL;
+                    }
                 });
-                fixed = fixed.replace(/<link([^>]+)href="([^"]+)"/g, (match, attrs, href) => {
-                    if (href.startsWith('http') || href.startsWith('/')) return match;
-                    // trim off the "libs" and everything before it.
-                    console.assert(href.match(/.*?\/libs\//), `Trying to fix ${href} but it doesn't match the pattern.`);
-                    let libPath = href.replace(/.*?\/libs\//, '');
-                    return `<link${attrs}href="https://quarto.org/site_libs/${libPath}"`;
+                doc.querySelectorAll('link').forEach(link => {
+                    if (link.href) {
+                        const fixedURL = rewriteURL(link.getAttribute('href'));
+                        console.log("Rewriting", link.href, "to", fixedURL);
+                        link.href = fixedURL;
+                    }
                 });
 
-                iframe.srcdoc = fixed;
-            } else {
-                iframe.src = URL.createObjectURL(responseBlob);
+                // Inject a mack localStorage as the first child within head
+                let localStorageScript = doc.createElement('script');
+                localStorageScript.textContent = `window.localStorage = {getItem: () => null, setItem: () => null, removeItem: () => null};`;
+                doc.head.insertBefore(localStorageScript, doc.head.firstChild);
+
+                responseText = doc.documentElement.outerHTML;
+                responseBlob = new Blob([responseText], {type: "text/html"});
             }
-
-            // Mock the localStorage within the iframe to avoid security errors.
-            iframe.addEventListener('load', () => {
-                iframe.contentWindow.localStorage = {
-                    getItem: () => null,
-                    setItem: () => null,
-                    removeItem: () => null
-                };
-            });
+            iframe.src = URL.createObjectURL(responseBlob);
         }
         iframe.style.width = "100%";
         iframe.style.height = "100%";
