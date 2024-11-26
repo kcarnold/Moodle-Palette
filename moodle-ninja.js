@@ -239,7 +239,7 @@
                 // Rewrite relative URLs on script and link tags like "ex03-bikeshare-wrangling_files/libs/clipboard/clipboard.min.js"
                 // to be absolute URLs sourced from https://calvin-data-science.github.io/data202/site_libs/
                 function rewriteURL(url) {
-                    if (url.startsWith('http')) return url;
+                    if (url.startsWith('http') || url.startsWith('data:')) return url;
                     const libPath = url.replace(/.*?\/libs\//, '');
                     return `https://calvin-data-science.github.io/data202/site_libs/${libPath}`;
                 }
