@@ -205,6 +205,7 @@
 
     async function showRaw(href) {
         let panel = document.querySelector('[data-region="review-panel"]');
+
         // Cleanup any object urls to avoid memory leaks.
         panel.querySelectorAll('iframe').forEach(x => {
             if (x.src.startsWith('blob:')) {
@@ -215,6 +216,9 @@
 
         if (!href) return; // null can be used to clear the view without loading another thing.
 
+        panel.innerHTML = "<p>Loading...</p>";
+
+        // FIXME: if fetch is slow, this function could be reentrant.
         let response = await fetch(href);
         //let responseText = await response.text();
         let responseBlob = await response.blob();
