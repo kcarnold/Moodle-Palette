@@ -1137,6 +1137,38 @@
         });
     }
 
+    // Inject next-feedback navigation on single-view page e.g., https://moodle.calvin.edu/grade/report/singleview/index.php?item=user&id=64944&userid=22072
+    // Bind to pressing alt-downarrow
+    if (window.location.pathname === '/grade/report/singleview/index.php') {
+        const navigateFeedback = (delta) => {
+            // Make sure we're on a name=feedback input
+            let curInput = document.activeElement;
+            if (curInput.tagName !== 'INPUT' || !curInput.name.startsWith('feedback')) {
+                return;
+            }
+            // Find the desired row
+            let curRow = curInput.closest('tr');
+            let desiredRow = (delta > 0) ? curRow.nextElementSibling : curRow.previousElementSibling;
+            if (!desiredRow) {
+                return;
+            }
+            let nextInput = desiredRow.querySelector('[name^=feedback]');
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }
+        document.addEventListener('keydown', (event) => {
+            if (event.altKey && event.key === 'ArrowDown') {
+                event.preventDefault();
+                navigateFeedback(1);
+            }
+            if (event.altKey && event.key === 'ArrowUp') {
+                event.preventDefault();
+                navigateFeedback(-1);
+            }
+        });
+    }
+
 
     function getMoodleTimeValue(doc, baseName) {
         let year = doc.querySelector(`[name="${baseName}[year]"]`).value;
