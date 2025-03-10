@@ -1025,6 +1025,44 @@
         localStorage.setItem(`grading-comments-${curActivityId}`, JSON.stringify(comments));
     }
 
+    async function scrapeAllQuickGradeComments() {
+        // Call from the main page, get all the /mod/assign/view.php links and scrape the quick grade comments from each one
+        const allComments = new Map(); // activity id to {name, comments}
+        for (let activityHref of document.querySelectorAll('a[href*="/mod/assign/view"]')) {
+            let activityId = new URL(activityHref.href).searchParams.get('id');
+            if (!activityId) { continue }
+            if (allComments.has(activityId)) { continue; }
+
+            const gradingUrl = activityHref.href + '&action=grading';
+            console.log("Fetching", gradingUrl);
+            let response = await fetch(gradingUrl);
+            let text = await response.text();
+            let doc = new DOMParser().parseFromString(text, 'text/html');
+            let comments = [...doc.querySelectorAll('.gradingtable [id^=quickgrade_comments]')].map(x => x.value);
+            let name = doc.querySelector('.page-header-headings h1').textContent;
+            allComments.set(activityId, {name, comments});
+        }
+        return allComments;
+    }
+
+    function scrapeAndStoreAllQuickGradeComments() {
+        scrapeAllQuickGradeComments().then(comments => {
+            console.log(comments)
+            let storageId = `all-quick-grade-comments-course-${courseId}`;
+            let commentsAsObject = Object.fromEntries(comments);
+            localStorage.setItem(storageId, JSON.stringify(commentsAsObject));
+        });
+    }
+
+    // Add a Ninja action to scrape all quick-grade comments from this course, but only if we're on the main page
+    if (window.location.pathname === '/course/view.php') {
+        ninjaData.push({
+            id: "ScrapeAllQuickGradeComments",
+            title: "Scrape all quick grade comments in this course",
+            handler: scrapeAndStoreAllQuickGradeComments
+        })
+    }
+
     // Add a Ninja action to show all quick-grade comments for the current activity
     if (window.location.pathname === '/mod/assign/view.php') {
         const curActivityId = new URL(window.location.href).searchParams.get('id');
