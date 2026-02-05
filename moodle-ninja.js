@@ -10,6 +10,7 @@
 // @run-at document-idle
 // ==/UserScript==
 
+// biome-ignore lint/complexity/useArrowFunction: <explanation>
 (function() {
     'use strict';
 
@@ -21,7 +22,7 @@
     if (document.body.classList.contains('mce-content-body')) {
         return;
     }
-    
+
     function addTree(parent, children) {
         if (!parent.children) parent.children = [];
         ninjaData.push(parent);
@@ -991,11 +992,32 @@
         let elt = document.getElementById('addselect');
         if (!elt) return;
         elt.setAttribute('size', '40');
-        elt.querySelectorAll("option").forEach(x => {
-            if (x.textContent.match(/\(0\)$/)) x.style.color = 'red';
-            if (x.textContent.match(/\(1\)$/)) x.style.color = 'green';
-
-        });
+        const sortCompare = (a, b) => {
+            let numA = parseInt(a.textContent.match(/\((\d+)\)\s*$/)?.[1] ?? '0', 10);
+            let numB = parseInt(b.textContent.match(/\((\d+)\)\s*$/)?.[1] ?? '0', 10);
+            // break ties alphabetically
+            if (numA === numB) {
+                return a.textContent.localeCompare(b.textContent);
+            }
+            return numA - numB;
+        };
+        const styleOption = (option) => {
+            if (option.textContent.match(/\(0\)$/)) option.style.color = 'red';
+            if (option.textContent.match(/\(1\)$/)) option.style.color = 'green';
+        };
+        // Sort options within each <optgroup> separately, preserving group structure
+        let groups = elt.querySelectorAll('optgroup');
+        if (groups.length > 0) {
+            for (let group of groups) {
+                let options = [...group.querySelectorAll('option')];
+                options.sort(sortCompare);
+                options.forEach(option => { group.appendChild(option); styleOption(option); });
+            }
+        } else {
+            let options = [...elt.querySelectorAll('option')];
+            options.sort(sortCompare);
+            options.forEach(option => { elt.appendChild(option); styleOption(option); });
+        }
     }
     hackGroupSelect();
 
