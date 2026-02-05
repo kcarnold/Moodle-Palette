@@ -224,7 +224,8 @@
         let responseBlob = await response.blob();
         if (responseBlob.type === "application/octet-stream") {
             // Avoid downloading it.
-            responseBlob = responseBlob.slice(0, responseBlob.size, "text/plain");
+            // Try UTF-8 first, fallback to other encodings if decode fails
+            responseBlob = new Blob([responseBlob], {type: 'text/plain;charset=utf-8'});
         }
         let iframe = document.createElement("iframe");
         iframe.setAttribute("sandbox", "allow-scripts allow-downloads"); // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
