@@ -57,9 +57,7 @@
 
         activityDirectory = [...document.querySelectorAll('li.section')].map(section => {
             let secId = section.getAttribute('id');
-            let labeledByElt = section.getAttribute('aria-labeled-by') || section.getAttribute('aria-labelledby');
-            if (!labeledByElt) console.warn("Couldn't find title for", section);
-            let secTitle = document.getElementById(labeledByElt).textContent.trim();
+            let secTitle = section.dataset.sectionname.trim();
             let activities = [...section.querySelectorAll('ul.section > li.activity .activity-instance')].map(activityInstance => {
                 if (!activityInstance) return;
                 let titleElt = activityInstance.querySelector('.activityname');
