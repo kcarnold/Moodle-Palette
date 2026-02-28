@@ -5,6 +5,18 @@
   "description": "Keyboard shortcuts and command palette for Moodle",
   "content_scripts": [
     {
+      "matches": ["https://moodle.calvin.edu/*"],
+      "js": ["content/moodle-ninja.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://moodle.calvin.edu/mod/quiz/*"],
+      "js": ["content/quiz-ninja.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
       "matches": ["https://moodle.calvin.edu/mod/assign/view.php*"],
       "js": ["content/keyboard-rubric-grading.js"],
       "run_at": "document_idle",
