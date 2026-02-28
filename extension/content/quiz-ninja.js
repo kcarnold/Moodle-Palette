@@ -29,23 +29,7 @@
         go("/course/modedit.php", `?update=${activityId}&return=1`);
     }
 
-    // Workaround from https://github.com/ssleptsov/ninja-keys/issues/51
-    let tag2 = document.createElement('script');
-    tag2.setAttribute('type', 'importmap');
-    tag2.textContent = `
-    {
-        "imports": {
-            "https://unpkg.com/lit-html@latest/directives/ref.js?module": "https://unpkg.com/lit-html@2.2.6/directives/ref.js?module"
-        }
-    }`;
-    document.body.appendChild(tag2);
-
-    // https://github.com/ssleptsov/ninja-keys
-    let tag = document.createElement('script');
-    tag.setAttribute('type', 'module');
-    tag.setAttribute('src', 'https://unpkg.com/ninja-keys?module');
-    document.body.appendChild(tag);
-
+    // ninja-keys is loaded by content/load-ninja-keys.js (ISOLATED world, document_start).
     let ninja = document.createElement('ninja-keys');
     document.body.appendChild(ninja);
 
