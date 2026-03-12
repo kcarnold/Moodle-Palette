@@ -11,7 +11,18 @@ Quiz-ninja has more stuff specific to quizzes, I haven’t merged it in. Ctrl-K 
  
 I have a few other scripts too, it’s a hodgepodge at the moment but I’d like to clean up and merge these sometime. Probably a project for some students someday.
 
+## Browser Extension
+
+See `extension/`.
+
+In that folder, run:
+
+```bash
+source .env
+web-ext build
+web-ext sign --channel=unlisted --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET
+```
+
 ## TODO
 
-- Make it a browser extension https://github.com/cezaraugusto/extension.js
 - Move to https://github.com/KonnorRogers/konnors-ninja-keys

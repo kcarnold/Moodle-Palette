@@ -40,5 +40,10 @@
       "run_at": "document_idle",
       "world": "MAIN"
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ken_arnold_searchforme@calvin.edu"
+    }
+}
 }
