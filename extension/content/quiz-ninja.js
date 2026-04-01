@@ -1,5 +1,5 @@
-// Quiz Ninja — Quiz-specific command palette (Ctrl+K)
-// Ported from Tampermonkey userscript to browser extension.
+// Quiz Ninja — Quiz-specific commands for the shared Moodle Palette.
+// Registers into window.moodlePalette when on a quiz page.
 
 'use strict';
 
@@ -14,7 +14,7 @@
         }
     });
     if (quizId === null) {
-        quizId = searchParams.get('id') || searchParams.get('cmid') || searchParams.get('q') || document.querySelector('input[name=id]').value;
+        quizId = searchParams.get('id') || searchParams.get('cmid') || searchParams.get('q') || document.querySelector('input[name=id]')?.value;
     }
 
     function go(path, search) {
@@ -29,28 +29,24 @@
         go("/course/modedit.php", `?update=${activityId}&return=1`);
     }
 
-    // ninja-keys is loaded by content/load-ninja-keys.js (ISOLATED world, document_start).
-    let ninja = document.createElement('ninja-keys');
-    document.body.appendChild(ninja);
-
-    ninja.data = [
+    let commands = [
         {
-            id: "Index",
+            id: "QuizIndex",
             title: "Quiz Index",
             handler: () => { go("/mod/quiz/view.php", `?id=${quizId}`); }
         },
         {
-            id: "Settings",
+            id: "QuizSettings",
             title: "Quiz Settings",
             handler: () => { goEdit(quizId); }
         },
         {
-            id: "Edit Quiz",
+            id: "EditQuiz",
             title: "Edit Quiz",
             handler: () => { go("/mod/quiz/edit.php", `?cmid=${quizId}`); }
         },
         {
-            id: "Grading",
+            id: "QuizGrading",
             title: "Manual Grading View",
             handler: () => { goQuizReportSection('grading'); }
         },
@@ -60,27 +56,27 @@
             handler: () => { goQuizReportSection('overview'); }
         },
         {
-            id: "Responses",
+            id: "QuizResponses",
             title: "Responses View",
             handler: () => { goQuizReportSection('responses'); }
         },
         {
-            id: "Stats",
+            id: "QuizStats",
             title: "Statistics View",
             handler: () => { goQuizReportSection('statistics'); }
         },
         {
-            id: "AddOverride",
+            id: "QuizAddOverride",
             title: "Add User Override",
             handler: () => { go('/mod/quiz/overrideedit.php', `?action=adduser&cmid=${quizId}`); }
         },
         {
-            id: "QBank",
+            id: "QuizQBank",
             title: "Question Bank",
             handler: () => { go("/question/edit.php", `?cmid=${quizId}`); }
         },
         {
-            id: "Credit All Short Answers",
+            id: "CreditAllShortAnswers",
             title: "Credit All Short Answers",
             handler: () => {
                 let feedbackText = prompt("Text to use", "Credit was given automatically.");
@@ -91,12 +87,12 @@
             }
         },
         {
-            id: "Load feedback",
+            id: "LoadFeedback",
             title: "Load feedback for manual grading",
             handler: loadManualFeedback
         },
         {
-            id: "Cleanup Manual Grading",
+            id: "CleanupManualGrading",
             title: "Cleanup Manual Grading",
             handler: () => {
                 document.querySelectorAll('.qtype_essay_editor.qtype_essay_response.readonly').forEach(x => {x.style.minHeight=''});
@@ -164,51 +160,82 @@
         setTimeout(function() { window.$('.icon.fa-code').click(); }, 5*1000);
     }
 
-    let reusePrevAction = {
-        id: "ReusePrev",
-        title: "Reuse Previous Manual Grade",
-        hotkey: "cmd+alt+n",
-        children: [],
-        handler: () => {
-            let prevResponses = new Map();
-            for (let attempt of document.querySelectorAll('.que')) {
-                let editor = attempt.querySelector('.editor_atto_content');
-                let text = editor.textContent.trim();
-                if (text === "") continue;
-                let points = attempt.querySelector('input[name$="-mark"]').value;
-                let count = (prevResponses.get(text) || {count: 0}).count + 1;
-                prevResponses.set(text, {
-                    text: text,
-                    html: editor.innerHTML,
-                    points: points,
-                    count: count
-                })
+    // Reuse Previous Grade — needs direct ninja access for dynamic children
+    function setupReusePrev(ninja) {
+        let reusePrevAction = {
+            id: "ReusePrev",
+            title: "Reuse Previous Manual Grade",
+            hotkey: "cmd+alt+n",
+            children: [],
+            handler: () => {
+                let prevResponses = new Map();
+                for (let attempt of document.querySelectorAll('.que')) {
+                    let editor = attempt.querySelector('.editor_atto_content');
+                    let text = editor.textContent.trim();
+                    if (text === "") continue;
+                    let points = attempt.querySelector('input[name$="-mark"]').value;
+                    let count = (prevResponses.get(text) || {count: 0}).count + 1;
+                    prevResponses.set(text, {
+                        text: text,
+                        html: editor.innerHTML,
+                        points: points,
+                        count: count
+                    })
+                }
+
+                cleanupReuseGrades();
+
+                let sortedResponses = Array.from(prevResponses.values()).sort((a, b) => b.count - a.count);
+                for (let response of sortedResponses) {
+                    let id = "ReusePrev" + response.text;
+                    ninja.data.push({
+                        id: id,
+                        title: `(${response.points}): ${response.text}`,
+                        parent: "ReusePrev",
+                        response: response,
+                        handler: reusePriorResponseFromItem
+                    });
+                    reusePrevAction.children.push(id);
+                }
+
+                ninja.data = ninja.data;
+
+                ninja.open({parent: "ReusePrev"});
+                return {keepOpen: true};
             }
+        };
 
-            cleanupReuseGrades();
-
-            let sortedResponses = Array.from(prevResponses.values()).sort((a, b) => b.count - a.count);
-            for (let response of sortedResponses) {
-                let id = "ReusePrev" + response.text;
-                ninja.data.push({
-                    id: id,
-                    title: `(${response.points}): ${response.text}`,
-                    parent: "ReusePrev",
-                    response: response,
-                    handler: reusePriorResponseFromItem
-                });
-                reusePrevAction.children.push(id);
+        function cleanupReuseGrades() {
+            for (let item of ninja.data.slice()) {
+                if (item.id === "ReusePrev") {
+                    item.children = [];
+                } else if (item.parent === "ReusePrev") {
+                    let index = ninja.data.indexOf(item);
+                    ninja.data.splice(index, 1);
+                }
             }
-
-            ninja.data = ninja.data;
-
-            ninja.open({parent: "ReusePrev"});
-            return {keepOpen: true};
         }
-    }
 
-    ninja.data.push(reusePrevAction);
-    ninja.data = ninja.data.slice();
+        function reusePriorResponseFromItem(item) {
+            let {response} = item;
+            let editor = lastFocusedEditor;
+            if (!editor) {
+                alert("No editor is focused.");
+                return;
+            }
+            editor.innerHTML = response.html;
+            let points = editor.closest('.que').querySelector('input[name$="-mark"]');
+            points.value = response.points;
+
+            let codeIcon = editor.closest('.que').querySelector('.icon.fa-code');
+            codeIcon.click();
+            setTimeout(function() { codeIcon.click(); }, .25*1000);
+
+            points.focus();
+        }
+
+        return reusePrevAction;
+    }
 
     // Keep track of which Atto editor was last focused.
     let lastFocusedEditor = null;
@@ -220,35 +247,6 @@
             }
         }
     });
-
-    function cleanupReuseGrades() {
-        for (let item of ninja.data.slice()) {
-            if (item.id === "ReusePrev") {
-                item.children = [];
-            } else if (item.parent === "ReusePrev") {
-                let index = ninja.data.indexOf(item);
-                ninja.data.splice(index, 1);
-            }
-        }
-    }
-
-    function reusePriorResponseFromItem(item) {
-        let {response} = item;
-        let editor = lastFocusedEditor;
-        if (!editor) {
-            alert("No editor is focused.");
-            return;
-        }
-        editor.innerHTML = response.html;
-        let points = editor.closest('.que').querySelector('input[name$="-mark"]');
-        points.value = response.points;
-
-        let codeIcon = editor.closest('.que').querySelector('.icon.fa-code');
-        codeIcon.click();
-        setTimeout(function() { codeIcon.click(); }, .25*1000);
-
-        points.focus();
-    }
 
     // Check rubric items using keypress
     function editorKeypress(event) {
@@ -278,7 +276,7 @@
         });
 
         let rubricText = rubricItems.map((item) => {
-            return (item.checked ? "☑️" : "🔲") + " " + item.text;
+            return (item.checked ? "\u2611\uFE0F" : "\uD83D\uDD32") + " " + item.text;
         }).join("\n");
         navigator.clipboard.writeText(rubricText);
 
@@ -298,5 +296,21 @@
         if (elt) elt.focus();
     }
     setTimeout(autofocusSearchBox, 500);
+
+    // Register with the shared palette
+    function doRegister(palette) {
+        palette.register(commands);
+        let reusePrevAction = setupReusePrev(palette.ninja);
+        palette.register([reusePrevAction]);
+    }
+
+    if (window.moodlePalette && window.moodlePalette.register && window.moodlePalette.ninja) {
+        doRegister(window.moodlePalette);
+    } else {
+        // Queue for when core loads
+        window.moodlePalette = window.moodlePalette || {};
+        window.moodlePalette._queue = window.moodlePalette._queue || [];
+        window.moodlePalette._queue.push(commands);
+    }
 
 })();
