@@ -871,5 +871,26 @@ if (!document.body.classList.contains('mce-content-body')) {
     // Re-assign ninja data to pick up late additions
     ninja.data = ninjaData;
 
+    // Plugin API — allows other content scripts to register commands
+    function registerCommands(commands) {
+        ninjaData.push(...commands);
+        ninja.data = ninjaData;
+    }
+
+    // Process any commands queued before core loaded
+    if (window.moodlePalette && window.moodlePalette._queue) {
+        for (const commands of window.moodlePalette._queue) {
+            registerCommands(commands);
+        }
+    }
+
+    window.moodlePalette = {
+        register: registerCommands,
+        addTree: addTree,
+        ninja: ninja,
+        courseId: courseId,
+        activityDirectory: activityDirectory,
+    };
+
 })();
 }
