@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Moodle Palette",
-  "version": "0.1",
+  "version": "0.2",
   "description": "Keyboard shortcuts and command palette for Moodle",
   "web_accessible_resources": [
     {
@@ -25,6 +25,12 @@
     {
       "matches": ["https://moodle.calvin.edu/mod/quiz/*"],
       "js": ["content/quiz-ninja.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://moodle.calvin.edu/*"],
+      "js": ["content/make-retrieval-quiz.js"],
       "run_at": "document_idle",
       "world": "MAIN"
     },
