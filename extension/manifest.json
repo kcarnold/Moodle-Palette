@@ -30,6 +30,12 @@
     },
     {
       "matches": ["https://moodle.calvin.edu/*"],
+      "js": ["content/ai-copilot.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://moodle.calvin.edu/*"],
       "js": ["content/make-retrieval-quiz.js"],
       "run_at": "document_idle",
       "world": "MAIN"
