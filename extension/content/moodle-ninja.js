@@ -143,68 +143,266 @@ if (!document.body.classList.contains('mce-content-body')) {
         children: ["Show File Uploads", "Save-Next", "Reset"]
     });
 
+    /* ---------- File Panel Web Component ---------- */
+
+    function loadJSZip() {
+        if (window._jszipPromise) return window._jszipPromise;
+        if (window.JSZip) {
+            window._jszipPromise = Promise.resolve(window.JSZip);
+            return window._jszipPromise;
+        }
+        window._jszipPromise = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js';
+            s.onload = () => resolve(window.JSZip);
+            s.onerror = () => reject(new Error('Failed to load JSZip'));
+            document.head.appendChild(s);
+        });
+        return window._jszipPromise;
+    }
+
+    class FilePanelElement extends HTMLElement {
+        constructor() {
+            super();
+            this._blobUrls = [];
+            this._previewBlobUrls = [];
+        }
+
+        disconnectedCallback() {
+            this._cleanup();
+        }
+
+        async show(href) {
+            this._cleanup();
+            if (!href) return;
+            this._showLoading('Loading...');
+            try {
+                await this._load(href);
+            } catch (err) {
+                this._showError(err);
+            }
+        }
+
+        _cleanup() {
+            for (const url of this._blobUrls) URL.revokeObjectURL(url);
+            this._blobUrls = [];
+            this._previewBlobUrls = [];
+            this.innerHTML = '';
+        }
+
+        _trackBlob(url) {
+            this._blobUrls.push(url);
+            return url;
+        }
+
+        _showLoading(msg) {
+            this.innerHTML = `<p class="fp-loading">${msg}</p>`;
+        }
+
+        _showError(err) {
+            this.innerHTML = `<p class="fp-error">Error: ${err.message}</p>`;
+        }
+
+        async _load(href) {
+            const response = await fetch(href);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            let blob = await response.blob();
+            const mimeType = blob.type.split(';')[0];
+            const isZip = mimeType === 'application/zip'
+                       || mimeType === 'application/x-zip-compressed'
+                       || href.split('?')[0].toLowerCase().endsWith('.zip');
+            if (isZip) {
+                await this._showZip(blob);
+            } else {
+                await this._showFile(blob, mimeType);
+            }
+        }
+
+        async _showFile(blob, mimeType) {
+            if (mimeType === 'application/octet-stream') {
+                blob = new Blob([blob], {type: 'text/plain;charset=utf-8'});
+                mimeType = 'text/plain';
+            }
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('sandbox', 'allow-scripts allow-downloads');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            const allowed = ['text/plain', 'text/html', 'application/pdf'];
+            if (!allowed.includes(mimeType)) {
+                iframe.srcdoc = `Click the file name to download it. (Not displaying because the response type was ${blob.type}.)`;
+            } else {
+                if (mimeType === 'text/html') {
+                    blob = await this._rewriteHtmlBlob(blob);
+                }
+                iframe.src = this._trackBlob(URL.createObjectURL(blob));
+            }
+            this.innerHTML = '';
+            this.appendChild(iframe);
+        }
+
+        async _rewriteHtmlBlob(blob) {
+            let responseText = await blob.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(responseText, 'text/html');
+            function rewriteURL(url) {
+                if (url.startsWith('http') || url.startsWith('data:')) return url;
+                const libPath = url.replace(/.*?\/libs\//, '');
+                return `https://calvin-data-science.github.io/data202/site_libs/${libPath}`;
+            }
+            doc.querySelectorAll('script').forEach(script => {
+                if (script.src) script.src = rewriteURL(script.getAttribute('src'));
+            });
+            doc.querySelectorAll('link').forEach(link => {
+                if (link.href) link.href = rewriteURL(link.getAttribute('href'));
+            });
+            const localStorageScript = doc.createElement('script');
+            localStorageScript.textContent = `window.localStorage = {getItem: () => null, setItem: () => null, removeItem: () => null};`;
+            doc.head.insertBefore(localStorageScript, doc.head.firstChild);
+            return new Blob([doc.documentElement.outerHTML], {type: 'text/html'});
+        }
+
+        async _showZip(zipBlob) {
+            const JSZip = await loadJSZip();
+            this._showLoading('Parsing ZIP...');
+            const zip = await JSZip.loadAsync(zipBlob);
+            this.innerHTML = '';
+            this.appendChild(this._buildZipTree(zip));
+        }
+
+        _buildZipTree(zip) {
+            // Build logical folder tree from flat JSZip paths
+            const root = {children: new Map()};
+            for (const [path, entry] of Object.entries(zip.files)) {
+                if (entry.dir) continue;
+                const parts = path.split('/');
+                let node = root;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!node.children.has(parts[i])) {
+                        node.children.set(parts[i], {name: parts[i], isDir: true, children: new Map()});
+                    }
+                    node = node.children.get(parts[i]);
+                }
+                const filename = parts[parts.length - 1];
+                if (filename) node.children.set(filename, {name: filename, isDir: false, entry});
+            }
+
+            const container = document.createElement('div');
+            container.className = 'fp-zip-browser';
+            const previewArea = document.createElement('div');
+            previewArea.className = 'fp-zip-preview';
+            container.appendChild(this._renderTreeNode(root, previewArea));
+            container.appendChild(previewArea);
+            return container;
+        }
+
+        _renderTreeNode(node, previewArea) {
+            const ul = document.createElement('ul');
+            ul.className = 'fp-zip-tree';
+            for (const child of node.children.values()) {
+                const li = document.createElement('li');
+                if (child.isDir) {
+                    const details = document.createElement('details');
+                    details.open = true;
+                    const summary = document.createElement('summary');
+                    summary.textContent = child.name + '/';
+                    details.appendChild(summary);
+                    details.appendChild(this._renderTreeNode(child, previewArea));
+                    li.appendChild(details);
+                } else {
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.textContent = child.name;
+                    a.addEventListener('click', e => {
+                        e.preventDefault();
+                        this._previewZipEntry(child.entry, child.name, previewArea);
+                    });
+                    li.appendChild(a);
+                }
+                ul.appendChild(li);
+            }
+            return ul;
+        }
+
+        async _previewZipEntry(entry, filename, previewArea) {
+            // Revoke previous preview blob URLs
+            for (const url of this._previewBlobUrls) URL.revokeObjectURL(url);
+            this._previewBlobUrls = [];
+
+            previewArea.innerHTML = '<p class="fp-loading">Loading...</p>';
+            try {
+                const ext = filename.split('.').pop().toLowerCase();
+                const textExts = new Set(['txt','py','js','ts','jsx','tsx','html','htm','css',
+                    'json','md','csv','xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini']);
+                const imageExts = new Set(['png','jpg','jpeg','gif','svg','webp','bmp']);
+
+                if (textExts.has(ext)) {
+                    const text = await entry.async('string');
+                    const pre = document.createElement('pre');
+                    pre.className = 'fp-zip-code';
+                    pre.textContent = text;
+                    previewArea.innerHTML = '';
+                    previewArea.appendChild(pre);
+                } else if (imageExts.has(ext)) {
+                    const blob = await entry.async('blob');
+                    const url = URL.createObjectURL(blob);
+                    this._previewBlobUrls.push(url);
+                    this._blobUrls.push(url);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '100%';
+                    previewArea.innerHTML = '';
+                    previewArea.appendChild(img);
+                } else {
+                    const blob = await entry.async('blob');
+                    const url = URL.createObjectURL(blob);
+                    this._previewBlobUrls.push(url);
+                    this._blobUrls.push(url);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.textContent = `Download ${filename}`;
+                    previewArea.innerHTML = '';
+                    previewArea.appendChild(a);
+                }
+            } catch (err) {
+                previewArea.innerHTML = `<p class="fp-error">Preview error: ${err.message}</p>`;
+            }
+        }
+    }
+
+    if (!customElements.get('file-panel')) {
+        customElements.define('file-panel', FilePanelElement);
+    }
+
+    if (!document.getElementById('fp-styles')) {
+        const style = document.createElement('style');
+        style.id = 'fp-styles';
+        style.textContent = `
+            file-panel { display: contents; }
+            file-panel .fp-zip-browser { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+            file-panel .fp-zip-tree { list-style:none; padding:0 0 0 1em; margin:0; overflow-y:auto; max-height:40%; border-bottom:1px solid #ccc; font-size:.9em; }
+            file-panel .fp-zip-tree li { padding:2px 0; }
+            file-panel .fp-zip-tree details > summary { cursor:pointer; }
+            file-panel .fp-zip-tree a { cursor:pointer; }
+            file-panel .fp-zip-preview { flex:1; overflow-y:auto; padding:.5em; }
+            file-panel .fp-zip-code { white-space:pre-wrap; word-break:break-all; font-size:.85em; margin:0; }
+            file-panel .fp-loading { color:#666; font-style:italic; }
+            file-panel .fp-error { color:red; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    /* ---------- End File Panel Web Component ---------- */
+
     async function showRaw(href) {
         let panel = document.querySelector('[data-region="review-panel"]');
-
-        // Cleanup any object urls to avoid memory leaks.
-        panel.querySelectorAll('iframe').forEach(x => {
-            if (x.src.startsWith('blob:')) {
-                URL.revokeObjectURL(x.src);
-            }
-        });
-        panel.innerHTML = '';
-
-        if (!href) return;
-
-        panel.innerHTML = "<p>Loading...</p>";
-
-        let response = await fetch(href);
-        let responseBlob = await response.blob();
-        if (responseBlob.type === "application/octet-stream") {
-            responseBlob = new Blob([responseBlob], {type: 'text/plain;charset=utf-8'});
+        let filePanel = panel.querySelector('file-panel');
+        if (!filePanel) {
+            filePanel = document.createElement('file-panel');
+            panel.innerHTML = '';
+            panel.appendChild(filePanel);
         }
-        let iframe = document.createElement("iframe");
-        iframe.setAttribute("sandbox", "allow-scripts allow-downloads");
-
-        const allowedContentTypes = ["text/plain", "text/html", "application/pdf"];
-        const responseType = responseBlob.type.split(';')[0];
-        if (allowedContentTypes.indexOf(responseType) === -1) {
-            iframe.srcdoc = `Click the file name to download it. (Not displaying because the response type was ${responseBlob.type}.)`;
-        } else {
-            if (responseType === "text/html") {
-                let responseText = await new Response(responseBlob).text();
-                let parser = new DOMParser();
-                let doc = parser.parseFromString(responseText, "text/html");
-                function rewriteURL(url) {
-                    if (url.startsWith('http') || url.startsWith('data:')) return url;
-                    const libPath = url.replace(/.*?\/libs\//, '');
-                    return `https://calvin-data-science.github.io/data202/site_libs/${libPath}`;
-                }
-                doc.querySelectorAll('script').forEach(script => {
-                    if (script.src) {
-                        const fixedURL = rewriteURL(script.getAttribute('src'));
-                        script.src = fixedURL;
-                    }
-                });
-                doc.querySelectorAll('link').forEach(link => {
-                    if (link.href) {
-                        const fixedURL = rewriteURL(link.getAttribute('href'));
-                        link.href = fixedURL;
-                    }
-                });
-
-                let localStorageScript = doc.createElement('script');
-                localStorageScript.textContent = `window.localStorage = {getItem: () => null, setItem: () => null, removeItem: () => null};`;
-                doc.head.insertBefore(localStorageScript, doc.head.firstChild);
-
-                responseText = doc.documentElement.outerHTML;
-                responseBlob = new Blob([responseText], {type: "text/html"});
-            }
-            iframe.src = URL.createObjectURL(responseBlob);
-        }
-        iframe.style.width = "100%";
-        iframe.style.height = "100%";
-        panel.appendChild(iframe);
+        await filePanel.show(href);
     }
 
     ninjaData.push({
@@ -257,7 +455,8 @@ if (!document.body.classList.contains('mce-content-body')) {
     function rubricNumbers(parentNode) {
         for (let criterion of document.querySelectorAll("#advancedgrading-criteria tr.criterion")) {
             let scoreElt = criterion.querySelector('.score input');
-            let outOf = criterion.querySelector('.score div').textContent;
+            let outOf = criterion.querySelector('.score div')?.textContent;
+            if (!scoreElt || !outOf) continue;
             scoreElt.type = 'number';
             scoreElt.min = "0";
             scoreElt.max = ""+outOf;
