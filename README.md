@@ -18,8 +18,13 @@ See `extension/`.
 In that folder, run:
 
 ```bash
-source .env
 web-ext build
+```
+
+To sign it (so it stays loaded):
+
+```bash
+source .env
 web-ext sign --channel=unlisted --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET
 ```
 
