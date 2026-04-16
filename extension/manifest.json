@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Moodle Palette",
-  "version": "0.2",
+  "version": "0.3",
   "description": "Keyboard shortcuts and command palette for Moodle",
   "web_accessible_resources": [
     {
