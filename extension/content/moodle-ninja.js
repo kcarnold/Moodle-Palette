@@ -147,16 +147,8 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     function loadJSZip() {
         if (window._jszipPromise) return window._jszipPromise;
-        if (window.JSZip) {
-            window._jszipPromise = Promise.resolve(window.JSZip);
-            return window._jszipPromise;
-        }
         window._jszipPromise = new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js';
-            s.onload = () => resolve(window.JSZip);
-            s.onerror = () => reject(new Error('Failed to load JSZip'));
-            document.head.appendChild(s);
+            require(['https://unpkg.com/jszip@3.10.1/dist/jszip.min.js'], resolve, reject);
         });
         return window._jszipPromise;
     }
