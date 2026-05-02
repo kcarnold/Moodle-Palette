@@ -203,8 +203,16 @@ if (!document.body.classList.contains('mce-content-body')) {
             const isZip = mimeType === 'application/zip'
                        || mimeType === 'application/x-zip-compressed'
                        || href.split('?')[0].toLowerCase().endsWith('.zip');
+            const isIpynb = href.split('?')[0].toLowerCase().endsWith('.ipynb');
             if (isZip) {
                 await this._showZip(blob);
+            } else if (isIpynb) {
+                const text = await blob.text();
+                const scroll = document.createElement('div');
+                scroll.className = 'fp-nb-scroll';
+                scroll.appendChild(this._renderNotebook(JSON.parse(text)));
+                this.innerHTML = '';
+                this.appendChild(scroll);
             } else {
                 await this._showFile(blob, mimeType);
             }
@@ -315,6 +323,106 @@ if (!document.body.classList.contains('mce-content-body')) {
             return ul;
         }
 
+        _renderNotebook(nb) {
+            const wrap = document.createElement('div');
+            wrap.className = 'fp-nb';
+            for (const cell of nb.cells || []) {
+                const cellDiv = document.createElement('div');
+                cellDiv.className = `fp-nb-cell fp-nb-${cell.cell_type}`;
+                const src = Array.isArray(cell.source) ? cell.source.join('') : (cell.source || '');
+                if (cell.cell_type === 'markdown') {
+                    cellDiv.innerHTML = this._mdToHtml(src);
+                } else if (cell.cell_type === 'code') {
+                    const execCount = cell.execution_count;
+                    const label = document.createElement('div');
+                    label.className = 'fp-nb-prompt';
+                    label.textContent = `In [${execCount ?? ' '}]:`;
+                    cellDiv.appendChild(label);
+                    const pre = document.createElement('pre');
+                    pre.className = 'fp-zip-code fp-nb-src';
+                    pre.textContent = src;
+                    cellDiv.appendChild(pre);
+                    for (const out of cell.outputs || []) {
+                        cellDiv.appendChild(this._renderOutput(out));
+                    }
+                } else {
+                    const pre = document.createElement('pre');
+                    pre.className = 'fp-zip-code';
+                    pre.textContent = src;
+                    cellDiv.appendChild(pre);
+                }
+                wrap.appendChild(cellDiv);
+            }
+            return wrap;
+        }
+
+        _renderOutput(out) {
+            const div = document.createElement('div');
+            div.className = 'fp-nb-output';
+            if (out.output_type === 'stream') {
+                const pre = document.createElement('pre');
+                pre.className = 'fp-zip-code fp-nb-stream';
+                pre.textContent = Array.isArray(out.text) ? out.text.join('') : (out.text || '');
+                div.appendChild(pre);
+            } else if (out.output_type === 'display_data' || out.output_type === 'execute_result') {
+                const data = out.data || {};
+                if (data['image/png']) {
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${data['image/png'].replace(/\n/g, '')}`;
+                    img.style.maxWidth = '100%';
+                    div.appendChild(img);
+                } else if (data['image/svg+xml']) {
+                    const svgHtml = Array.isArray(data['image/svg+xml']) ? data['image/svg+xml'].join('') : data['image/svg+xml'];
+                    const iframe = document.createElement('iframe');
+                    iframe.setAttribute('sandbox', '');
+                    iframe.srcdoc = svgHtml;
+                    iframe.style.cssText = 'width:100%;border:none;';
+                    div.appendChild(iframe);
+                } else if (data['text/html']) {
+                    const html = Array.isArray(data['text/html']) ? data['text/html'].join('') : data['text/html'];
+                    const iframe = document.createElement('iframe');
+                    iframe.setAttribute('sandbox', 'allow-scripts');
+                    iframe.srcdoc = html;
+                    iframe.style.cssText = 'width:100%;border:none;';
+                    div.appendChild(iframe);
+                } else if (data['text/plain']) {
+                    const pre = document.createElement('pre');
+                    pre.className = 'fp-zip-code';
+                    pre.textContent = Array.isArray(data['text/plain']) ? data['text/plain'].join('') : data['text/plain'];
+                    div.appendChild(pre);
+                }
+            } else if (out.output_type === 'error') {
+                const pre = document.createElement('pre');
+                pre.className = 'fp-zip-code fp-nb-error';
+                // Strip ANSI escape codes from traceback
+                pre.textContent = [out.ename, out.evalue, ...(out.traceback || [])].join('\n').replace(new RegExp('\\x1b\\[[0-9;]*m', 'g'), '');
+                div.appendChild(pre);
+            }
+            return div;
+        }
+
+        _mdToHtml(md) {
+            // Split on fenced code blocks to avoid processing them as markdown
+            const parts = md.split(/(```[\s\S]*?```)/);
+            const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return parts.map((part, i) => {
+                if (i % 2 === 1) {
+                    const code = part.replace(/^```\w*\n?/, '').replace(/\n?```$/, '');
+                    return `<pre class="fp-zip-code">${esc(code)}</pre>`;
+                }
+                return esc(part)
+                    .replace(/^#{4} (.+)$/gm, '<h4>$1</h4>')
+                    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/`(.+?)`/g, '<code>$1</code>')
+                    .replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>')
+                    .replace(/\n\n+/g, '</p><p>');
+            }).join('');
+        }
+
         async _previewZipEntry(entry, filename, previewArea) {
             // Revoke previous preview blob URLs
             for (const url of this._previewBlobUrls) URL.revokeObjectURL(url);
@@ -327,7 +435,11 @@ if (!document.body.classList.contains('mce-content-body')) {
                     'json','md','csv','xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini']);
                 const imageExts = new Set(['png','jpg','jpeg','gif','svg','webp','bmp']);
 
-                if (textExts.has(ext)) {
+                if (ext === 'ipynb') {
+                    const text = await entry.async('string');
+                    previewArea.innerHTML = '';
+                    previewArea.appendChild(this._renderNotebook(JSON.parse(text)));
+                } else if (textExts.has(ext)) {
                     const text = await entry.async('string');
                     const pre = document.createElement('pre');
                     pre.className = 'fp-zip-code';
@@ -380,6 +492,17 @@ if (!document.body.classList.contains('mce-content-body')) {
             file-panel .fp-zip-code { white-space:pre-wrap; word-break:break-all; font-size:.85em; margin:0; }
             file-panel .fp-loading { color:#666; font-style:italic; }
             file-panel .fp-error { color:red; }
+            file-panel .fp-nb-scroll { height:100%; overflow-y:auto; padding:.5em; box-sizing:border-box; }
+            file-panel .fp-nb { padding:.5em; }
+            file-panel .fp-nb-cell { margin-bottom:.75em; }
+            file-panel .fp-nb-markdown { padding:.25em .5em; }
+            file-panel .fp-nb-markdown h1,h2,h3,h4 { margin:.25em 0; }
+            file-panel .fp-nb-code { background:#f5f5f5; border-left:3px solid #4070a0; padding:.25em .5em; }
+            file-panel .fp-nb-prompt { font-size:.8em; color:#888; font-family:monospace; }
+            file-panel .fp-nb-src { background:#f5f5f5; }
+            file-panel .fp-nb-output { padding:.25em .5em; border-left:3px solid #ddd; margin-top:.25em; }
+            file-panel .fp-nb-stream { color:#333; }
+            file-panel .fp-nb-error { color:#c00; }
         `;
         document.head.appendChild(style);
     }
