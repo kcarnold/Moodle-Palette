@@ -131,7 +131,7 @@
 
         function getGrade(name) {
             for (const row of allComments) {
-                if (name == row.name) {
+                if (name === row.name) {
                     allStudents.delete(name);
                     return row;
                 }
@@ -148,7 +148,7 @@
             const grade = getGrade(name);
             elt.val(grade.score);
             const editor = container.find('.editor_atto_content');
-            if (editor.length != 1) {
+            if (editor.length !== 1) {
                 console.warn("Failed to find editor " + name);
             }
             editor.html(grade.comments)

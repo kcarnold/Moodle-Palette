@@ -484,7 +484,7 @@ if (!document.body.classList.contains('mce-content-body')) {
             if (column) {
                 selector = `.c${column} ${selector}`;
             }
-            document.getElementById('grade_edit_tree_table').querySelectorAll(selector).forEach(x => x.classList.remove('accesshide'));
+            document.getElementById('grade_edit_tree_table').querySelectorAll(selector).forEach(x => {x.classList.remove('accesshide')});
         }
     });
 
