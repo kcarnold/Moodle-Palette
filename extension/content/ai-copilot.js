@@ -2,9 +2,9 @@
 // Two configurable AI profiles: one for instructor-written text, one for student-written text.
 // Config stored in localStorage, dialog shown on first use or via palette command.
 
-'use strict';
 
-(function() {
+
+(() => {
 
     const STORAGE_KEY = 'moodle-palette-ai-config';
 
@@ -23,7 +23,7 @@
 
     function loadConfig() {
         try {
-            let stored = localStorage.getItem(STORAGE_KEY);
+            const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) return JSON.parse(stored);
         } catch (_) {}
         return null;
@@ -125,17 +125,17 @@
     const configForm = dialog.querySelector('form');
 
     function populateDialog(config) {
-        for (let profile of ['instructor', 'student']) {
-            for (let field of ['endpoint', 'model', 'apiKey']) {
+        for (const profile of ['instructor', 'student']) {
+            for (const field of ['endpoint', 'model', 'apiKey']) {
                 configForm.querySelector(`[name="${profile}-${field}"]`).value = config[profile][field];
             }
         }
     }
 
     function readDialog() {
-        let config = { instructor: {}, student: {} };
-        for (let profile of ['instructor', 'student']) {
-            for (let field of ['endpoint', 'model', 'apiKey']) {
+        const config = { instructor: {}, student: {} };
+        for (const profile of ['instructor', 'student']) {
+            for (const field of ['endpoint', 'model', 'apiKey']) {
                 config[profile][field] = configForm.querySelector(`[name="${profile}-${field}"]`).value.trim();
             }
         }
@@ -154,7 +154,7 @@
             dialog.addEventListener('close', function handler() {
                 dialog.removeEventListener('close', handler);
                 if (dialog.returnValue === 'save') {
-                    let config = readDialog();
+                    const config = readDialog();
                     saveConfig(config);
                     resolve(config);
                 } else {
@@ -167,7 +167,7 @@
     // Get a profile config, prompting if not yet configured
     async function ensureProfile(profileName) {
         let config = getConfig();
-        let profile = config[profileName];
+        const profile = config[profileName];
         if (profile.endpoint && profile.model) return profile;
         // Need configuration
         config = await openConfigDialogAsync();
@@ -178,11 +178,11 @@
     // --- Shared API call ---
 
     async function chatComplete(profile, messages) {
-        let headers = { 'Content-Type': 'application/json' };
+        const headers = { 'Content-Type': 'application/json' };
         if (profile.apiKey) {
             headers['Authorization'] = `Bearer ${profile.apiKey}`;
         }
-        let resp = await fetch(profile.endpoint, {
+        const resp = await fetch(profile.endpoint, {
             method: 'POST',
             headers,
             body: JSON.stringify({
@@ -193,17 +193,17 @@
                 stream: false,
             }),
         });
-        let data = await resp.json();
+        const data = await resp.json();
         return data.choices[0].message.content;
     }
 
     // --- Commands ---
 
     async function getConfusions() {
-        let profile = await ensureProfile('instructor');
+        const profile = await ensureProfile('instructor');
         if (!profile) return;
 
-        let results = document.createElement('div');
+        const results = document.createElement('div');
         Object.assign(results.style, {
             position: 'fixed', top: '0', right: '0',
             width: '25%', height: '25%',
@@ -213,19 +213,19 @@
             fontSize: 'small', whiteSpace: 'pre-wrap',
         });
 
-        let closeBtn = document.createElement('button');
+        const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
         Object.assign(closeBtn.style, { position: 'absolute', top: '0', right: '0' });
         closeBtn.addEventListener('click', () => results.remove());
         results.appendChild(closeBtn);
         document.body.appendChild(results);
 
-        let text = prompt('Instructions?');
+        const text = prompt('Instructions?');
         if (!text) { results.remove(); return; }
 
         results.textContent = 'Thinking...';
         try {
-            let response = await chatComplete(profile, [
+            const response = await chatComplete(profile, [
                 { role: 'system', content: 'What clarification questions might students have about these instructions?' },
                 { role: 'user', content: text },
             ]);
@@ -236,33 +236,33 @@
     }
 
     async function clarifyDiscussionPosts() {
-        let profile = await ensureProfile('student');
+        const profile = await ensureProfile('student');
         if (!profile) return;
 
-        let contentContainers = document.querySelectorAll('.post-content-container');
-        for (let contentContainer of contentContainers) {
-            let origHTML = contentContainer.innerHTML;
-            let content = contentContainer.textContent;
+        const contentContainers = document.querySelectorAll('.post-content-container');
+        for (const contentContainer of contentContainers) {
+            const origHTML = contentContainer.innerHTML;
+            const content = contentContainer.textContent;
 
             try {
-                let message = await chatComplete(profile, [
+                const message = await chatComplete(profile, [
                     { role: 'system', content: 'Insert paragraph breaks in the following text. Also, bold any names mentioned. Include just the result, no explanation.' },
                     { role: 'user', content: content },
                 ]);
 
                 // Simple markdown-to-HTML: bold and paragraphs
-                let rendered = message
+                const rendered = message
                     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                     .split(/\n{2,}/)
                     .map(p => `<p>${p}</p>`)
                     .join('');
                 contentContainer.innerHTML = rendered;
 
-                let details = document.createElement('details');
-                let summary = document.createElement('summary');
+                const details = document.createElement('details');
+                const summary = document.createElement('summary');
                 summary.textContent = 'Original content';
                 details.appendChild(summary);
-                let div = document.createElement('div');
+                const div = document.createElement('div');
                 div.innerHTML = origHTML;
                 details.appendChild(div);
                 contentContainer.appendChild(details);

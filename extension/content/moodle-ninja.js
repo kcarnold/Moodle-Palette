@@ -2,11 +2,11 @@
 // Ported from Tampermonkey userscript to browser extension.
 // AI features (OpenAI, Ollama) removed for initial port.
 
-'use strict';
+
 
 // Abort if we're inside a tinymce editor.
 if (!document.body.classList.contains('mce-content-body')) {
-(function() {
+(() => {
 
     function addTree(parent, children) {
         if (!parent.children) parent.children = [];
@@ -19,7 +19,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         });
     }
 
-    let searchParams = new URLSearchParams(document.location.search);
+    const searchParams = new URLSearchParams(document.location.search);
     let courseId;
     let activityDirectory = [];
 
@@ -27,7 +27,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         if (window.M && window.M.cfg && window.M.cfg.courseId) {
             return window.M.cfg.courseId;
         }
-        let dataResult = document.querySelector('[data-courseid]');
+        const dataResult = document.querySelector('[data-courseid]');
         if (dataResult) {
             return dataResult.getAttribute('data-courseid');
         }
@@ -40,22 +40,22 @@ if (!document.body.classList.contains('mce-content-body')) {
         courseId = searchParams.get('id');
 
         activityDirectory = [...document.querySelectorAll('li.section')].map(section => {
-            let secId = section.getAttribute('id');
-            let secTitle = section.dataset.sectionname.trim();
-            let activities = [...section.querySelectorAll('ul.section > li.activity .activity-instance')].map(activityInstance => {
+            const secId = section.getAttribute('id');
+            const secTitle = section.dataset.sectionname.trim();
+            const activities = [...section.querySelectorAll('ul.section > li.activity .activity-instance')].map(activityInstance => {
                 if (!activityInstance) return;
-                let titleElt = activityInstance.querySelector('.activityname');
+                const titleElt = activityInstance.querySelector('.activityname');
                 if (!titleElt) {
                     console.warn("OOPS, missing title", activityInstance);
                 }
-                let title = titleElt.querySelector('.instancename').textContent;
-                let linkNode = titleElt.querySelector('a');
+                const title = titleElt.querySelector('.instancename').textContent;
+                const linkNode = titleElt.querySelector('a');
                 if (!linkNode) {
                     console.warn("OOPS, missing link", activityInstance, title);
                 }
-                let url = linkNode.getAttribute('href');
+                const url = linkNode.getAttribute('href');
 
-                let activity = {title, url};
+                const activity = {title, url};
                 if (/\/mod\/quiz\/view.php/.test(activity.url)) {
                     activity.type = 'quiz';
                 } else if (/\/mod\/assign\/view.php/.test(activity.url)) {
@@ -71,16 +71,16 @@ if (!document.body.classList.contains('mce-content-body')) {
         localStorage[`activities-${courseId}`] = JSON.stringify(activityDirectory);
     } else {
         courseId = getCourseId();
-        let stored = localStorage[`activities-${courseId}`];
+        const stored = localStorage[`activities-${courseId}`];
         if (stored) {
             activityDirectory = JSON.parse(stored);
         }
     }
 
-    let activityDirectoryFlat = activityDirectory.flatMap(x => x.activities);
+    const activityDirectoryFlat = activityDirectory.flatMap(x => x.activities);
 
     // ninja-keys is loaded by content/load-ninja-keys.js (ISOLATED world, document_start).
-    let ninja = document.createElement('ninja-keys');
+    const ninja = document.createElement('ninja-keys');
     ninja.setAttribute('style', '--ninja-z-index: 1050;');
     ninja.setAttribute('openHotkey', "cmd+p,ctrl+p");
     document.body.appendChild(ninja);
@@ -90,8 +90,8 @@ if (!document.body.classList.contains('mce-content-body')) {
         window.location = item.url;
     }
 
-    let ninjaData = [];
-    let courseSections = [
+    const ninjaData = [];
+    const courseSections = [
         {title: "Course Home", handler: () => {window.location = `/course/view.php?id=${courseId}&perpage=5000`; }},
         {
             id: "Participants",
@@ -109,11 +109,11 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     addTree({id: "Sections", title: "Course Sections"}, courseSections);
 
-    let activityItem = {id: "Act", title: "Activity", children: []};
+    const activityItem = {id: "Act", title: "Activity", children: []};
     ninjaData.push(activityItem);
     activityDirectory.forEach(section => {
-        let secId = section.secId;
-        let children = section.activities.map(({title, url}) => ({
+        const secId = section.secId;
+        const children = section.activities.map(({title, url}) => ({
             id: title, title: title,
             parent: secId,
             url: url, handler: activityHandler
@@ -128,7 +128,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         id: "CourseBlocks",
         title: "Course Blocks Open-Close",
         handler: () => {
-            let btn = document.getElementById('blocksliderbutton');
+            const btn = document.getElementById('blocksliderbutton');
             if (btn) {
                 btn.click();
                 btn.scrollIntoView();
@@ -198,7 +198,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         async _load(href) {
             const response = await fetch(href);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            let blob = await response.blob();
+            const blob = await response.blob();
             const mimeType = blob.type.split(';')[0];
             const isZip = mimeType === 'application/zip'
                        || mimeType === 'application/x-zip-compressed'
@@ -233,7 +233,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         }
 
         async _rewriteHtmlBlob(blob) {
-            let responseText = await blob.text();
+            const responseText = await blob.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(responseText, 'text/html');
             function rewriteURL(url) {
@@ -387,7 +387,7 @@ if (!document.body.classList.contains('mce-content-body')) {
     /* ---------- End File Panel Web Component ---------- */
 
     async function showRaw(href) {
-        let panel = document.querySelector('[data-region="review-panel"]');
+        const panel = document.querySelector('[data-region="review-panel"]');
         let filePanel = panel.querySelector('file-panel');
         if (!filePanel) {
             filePanel = document.createElement('file-panel');
@@ -402,7 +402,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         title: "Show File Uploads",
         parent: "Submission",
         handler: () => {
-            let observer = new MutationObserver(mutCallback)
+            const observer = new MutationObserver(mutCallback)
             observer.observe(document.querySelector('[data-region="grade-panel"]'), {childList: true, attributes: false, subtree: true});
             hookFileSubmissions(document.body);
             rubricNumbers(document.body);
@@ -445,9 +445,9 @@ if (!document.body.classList.contains('mce-content-body')) {
     }
 
     function rubricNumbers(parentNode) {
-        for (let criterion of document.querySelectorAll("#advancedgrading-criteria tr.criterion")) {
-            let scoreElt = criterion.querySelector('.score input');
-            let outOf = criterion.querySelector('.score div')?.textContent;
+        for (const criterion of document.querySelectorAll("#advancedgrading-criteria tr.criterion")) {
+            const scoreElt = criterion.querySelector('.score input');
+            const outOf = criterion.querySelector('.score div')?.textContent;
             if (!scoreElt || !outOf) continue;
             scoreElt.type = 'number';
             scoreElt.min = "0";
@@ -480,7 +480,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         title: "Unhide checkbox labels",
         handler: () => {
             let selector = ".accesshide";
-            let column = prompt("Which column?", "4");
+            const column = prompt("Which column?", "4");
             if (column) {
                 selector = `.c${column} ${selector}`;
             }
@@ -489,7 +489,7 @@ if (!document.body.classList.contains('mce-content-body')) {
     });
 
     /* The silly gears... */
-    let actionMenu = [...document.querySelectorAll('#region-main-settings-menu [data-enhance="moodle-core-actionmenu"] a[role="menuitem"]')].map(x => ({title: x.textContent, url: x.getAttribute("href")}));
+    const actionMenu = [...document.querySelectorAll('#region-main-settings-menu [data-enhance="moodle-core-actionmenu"] a[role="menuitem"]')].map(x => ({title: x.textContent, url: x.getAttribute("href")}));
     if (actionMenu.length > 0) {
         addTree(
             {id: "MenuActions", title: "Gear"},
@@ -520,7 +520,7 @@ if (!document.body.classList.contains('mce-content-body')) {
                 {
                     title: "Edit next",
                     handler: () => {
-                        let currentId = searchParams.get('update');
+                        const currentId = searchParams.get('update');
                         let currentActivityIndex = activityDirectoryFlat.findIndex(x => x.id === currentId);
                         if (currentActivityIndex === -1) {
                             alert("Couldn't find current activity in activity directory.");
@@ -529,7 +529,7 @@ if (!document.body.classList.contains('mce-content-body')) {
                         function slugify(s) {
                             return s.replace(/[^a-zA-Z]/g, '');
                         }
-                        let currentActivitySlug = slugify(activityDirectoryFlat[currentActivityIndex].title);
+                        const currentActivitySlug = slugify(activityDirectoryFlat[currentActivityIndex].title);
                         currentActivityIndex++;
                         let matched = false, nextActivity;
                         while (currentActivityIndex < activityDirectoryFlat.length - 1) {
@@ -555,17 +555,17 @@ if (!document.body.classList.contains('mce-content-body')) {
         id: "BulkOverride",
         title: "Bulk Quiz Overrides",
         handler: async () => {
-            let userId = prompt("User ID?");
+            const userId = prompt("User ID?");
             if (!userId) return;
 
-            let quizzes = activityDirectory.flatMap(category =>
+            const quizzes = activityDirectory.flatMap(category =>
                                                     category.activities.filter(x => x.type === "quiz"));
-            let activityTitles = quizzes.map(x => x.title).join("\n");
+            const activityTitles = quizzes.map(x => x.title).join("\n");
             if (!confirm(`This will override the due date for the following quizzes:\n${activityTitles}\n\nContinue?`)) return;
 
-            for (let quiz of quizzes) {
-                let quizId = quiz.id;
-                let response = await fetch("https://moodle.calvin.edu/mod/quiz/overrideedit.php", {
+            for (const quiz of quizzes) {
+                const quizId = quiz.id;
+                const response = await fetch("https://moodle.calvin.edu/mod/quiz/overrideedit.php", {
                     "credentials": "include",
                     "headers": {
                         "Content-Type": "application/x-www-form-urlencoded",
@@ -594,16 +594,16 @@ if (!document.body.classList.contains('mce-content-body')) {
     }
 
     async function getQuizEarliestAttemptTimes(quizId) {
-        let url = `/mod/quiz/report.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${quizId}&mode=overview&attempts=enrolled_with&onlygraded=&onlyregraded=&slotmarks=1`;
-        let gradesJSON = await fetch(url);
+        const url = `/mod/quiz/report.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${quizId}&mode=overview&attempts=enrolled_with&onlygraded=&onlyregraded=&slotmarks=1`;
+        const gradesJSON = await fetch(url);
         let grades = await gradesJSON.json();
         grades = grades[0];
-        let earliestAttemptByUser = new Map();
-        for (let attempt of grades) {
-            let email = attempt[2];
-            let completionTime = attempt[5];
-            let date = new Date(completionTime);
-            let existingAttempt = earliestAttemptByUser.get(email);
+        const earliestAttemptByUser = new Map();
+        for (const attempt of grades) {
+            const email = attempt[2];
+            const completionTime = attempt[5];
+            const date = new Date(completionTime);
+            const existingAttempt = earliestAttemptByUser.get(email);
             if (!existingAttempt || existingAttempt > date) {
                 earliestAttemptByUser.set(email, date);
             }
@@ -612,22 +612,22 @@ if (!document.body.classList.contains('mce-content-body')) {
     }
 
     async function getAssignEarliestAttemptTimes(moduleId, userIdToEmail) {
-        let url = `/report/log/index.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${courseId}&modid=${moduleId}&modaction=c&chooselog=1&logreader=logstore_standard`;
-        let response = await fetch(url);
+        const url = `/report/log/index.php?sesskey=${window.M.cfg.sesskey}&download=json&id=${courseId}&modid=${moduleId}&modaction=c&chooselog=1&logreader=logstore_standard`;
+        const response = await fetch(url);
         let data = await response.json();
         data = data[0];
 
-        let earliestAttemptByUser = new Map();
-        for (let row of data) {
+        const earliestAttemptByUser = new Map();
+        for (const row of data) {
             if (row[5] !== "Submission created.") continue;
-            let userId = row[6].match(/user with id '(\d+)'/)[1];
-            let email = userIdToEmail.get(userId);
+            const userId = row[6].match(/user with id '(\d+)'/)[1];
+            const email = userIdToEmail.get(userId);
             if (!email) {
                 console.warn(`No email found for user ${userId}`);
                 continue;
             }
-            let date = new Date(row[0]);
-            let existingAttempt = earliestAttemptByUser.get(email);
+            const date = new Date(row[0]);
+            const existingAttempt = earliestAttemptByUser.get(email);
             if (!existingAttempt || existingAttempt > date) {
                 earliestAttemptByUser.set(email, date);
             }
@@ -640,7 +640,7 @@ if (!document.body.classList.contains('mce-content-body')) {
     }
 
     function fillInTextboxIfDifferent(textbox, value) {
-        let textBoxValue = textbox.value;
+        const textBoxValue = textbox.value;
         value = "" + value;
         if (stripTrailingZeros(textbox.value) !== stripTrailingZeros(value)) {
             textbox.value = value;
@@ -649,20 +649,20 @@ if (!document.body.classList.contains('mce-content-body')) {
     }
 
     async function creditAllAttempts(activities, userIdToEmail) {
-        let exceptionDates = ['2023-02-27',
+        const exceptionDates = ['2023-02-27',
                               '2023-02-28',
                               '2023-03-01',
                               '2023-03-02',
                               '2023-03-03'].map(x => new Date(`${x}T00:00:00`));
 
-        let activityIds = activities.map(activity => activity.id);
-        let activityNames = new Map();
-        for (let activity of activities) {
+        const activityIds = activities.map(activity => activity.id);
+        const activityNames = new Map();
+        for (const activity of activities) {
             activityNames.set(activity.id, activity.title);
         }
 
-        let attemptsByActivity = new Map();
-        for (let activity of activities) {
+        const attemptsByActivity = new Map();
+        for (const activity of activities) {
             attemptsByActivity.set(activity.id, await getEarliestAttemptTimes(activity, userIdToEmail));
         }
 
@@ -670,9 +670,9 @@ if (!document.body.classList.contains('mce-content-body')) {
         if (defaultDueElt = document.querySelector('#region-main [data-region="activity-dates"] div')) {
             defaultDueDate = new Date(defaultDueElt.textContent.trim().match(/Due: (.+)$/)[1]);
         }
-        let userRows = document.querySelectorAll('.gradingtable table tbody tr');
-        for (let userRow of userRows) {
-            let email = userRow.querySelector('.email').textContent;
+        const userRows = document.querySelectorAll('.gradingtable table tbody tr');
+        for (const userRow of userRows) {
+            const email = userRow.querySelector('.email').textContent;
             let dueDate = userRow.querySelector('.duedate')?.textContent;
             if (!dueDate) {
                 if (!defaultDueDate) {
@@ -685,8 +685,8 @@ if (!document.body.classList.contains('mce-content-body')) {
             }
 
             let resultsByActivity = new Map(), totalPoints = 0;
-            for (let [activityId, attemptTimes] of attemptsByActivity) {
-                let attemptTime = attemptTimes.get(email);
+            for (const [activityId, attemptTimes] of attemptsByActivity) {
+                const attemptTime = attemptTimes.get(email);
                 if (!attemptTime) {
                     resultsByActivity.set(activityId, "No attempt");
                     continue;
@@ -695,21 +695,21 @@ if (!document.body.classList.contains('mce-content-body')) {
                     resultsByActivity.set(activityId, "On time");
                     totalPoints++;
                 } else {
-                    let daysLate = countBusinessDaysBetween(dueDate, attemptTime, exceptionDates);
+                    const daysLate = countBusinessDaysBetween(dueDate, attemptTime, exceptionDates);
                     resultsByActivity.set(activityId, `${daysLate} days late`);
                     totalPoints += Math.max(0.2, 1 - daysLate * 0.2);
                 }
             }
-            let grade = totalPoints / activityIds.length;
-            let gradeTextBox = userRow.querySelector('input[name^=quickgrade]');
-            let outOfText = gradeTextBox.nextSibling.textContent;
-            let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
+            const grade = totalPoints / activityIds.length;
+            const gradeTextBox = userRow.querySelector('input[name^=quickgrade]');
+            const outOfText = gradeTextBox.nextSibling.textContent;
+            const maxGrade = parseInt(outOfText.match(/\d+/)[0]);
             fillInTextboxIfDifferent(gradeTextBox, (grade * maxGrade).toFixed(2));
             let feedbackText = '';
             if (grade < 1.0) {
                 feedbackText = `Results by activity: `;
                 let anyNoAttempt = false;
-                for (let [activityId, result] of resultsByActivity) {
+                for (const [activityId, result] of resultsByActivity) {
                     if (result === "No attempt") {
                         anyNoAttempt = true;
                     }
@@ -719,18 +719,18 @@ if (!document.body.classList.contains('mce-content-body')) {
                     feedbackText += ` Don't forget to complete these activities on Moodle. Let the instructor know when you have done so.`;
                 }
             }
-            let feedbackTextBox = userRow.querySelector('textarea[name^=quickgrade_comments]');
+            const feedbackTextBox = userRow.querySelector('textarea[name^=quickgrade_comments]');
             fillInTextboxIfDifferent(feedbackTextBox, feedbackText);
         }
     }
 
     function countBusinessDaysBetween(startDate, endDate, exceptionDates) {
         let count = 0;
-        let currentDate = new Date(startDate);
+        const currentDate = new Date(startDate);
         while (currentDate <= endDate) {
-            let dayOf = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+            const dayOf = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
             if (!exceptionDates.some(x => x - dayOf === 0)) {
-                let day = currentDate.getDay();
+                const day = currentDate.getDay();
                 if (day !== 0 && day !== 6) {
                     count++;
                 }
@@ -744,9 +744,9 @@ if (!document.body.classList.contains('mce-content-body')) {
         if (typeof regex === 'string') {
             regex = new RegExp(regex);
         }
-        let matchingActivities = [];
-        for (let category of activityDirectory) {
-            for (let activity of category.activities || []) {
+        const matchingActivities = [];
+        for (const category of activityDirectory) {
+            for (const activity of category.activities || []) {
                 if (activity.type !== "quiz" && activity.type !== "assign" && activity.type !== "forum") {
                     continue;
                 }
@@ -764,20 +764,20 @@ if (!document.body.classList.contains('mce-content-body')) {
             id: "CreditFromQuizzes",
             title: "Give credit from quizzes",
             handler: async () => {
-                let activityRegex = prompt('Enter a regex to match the activities you want to credit.');
-                let activities = getMatchingActivities(activityRegex);
+                const activityRegex = prompt('Enter a regex to match the activities you want to credit.');
+                const activities = getMatchingActivities(activityRegex);
                 if (activities.length === 0) {
                     alert("no matching activities.")
                     return;
                 }
-                let activityTitles = activities.map(activity => activity.title);
-                let activityTitlesString = activityTitles.join('\n');
-                let confirmed = confirm(`Are you sure you want to credit all completions of the following activities?\n\n${activityTitlesString}`);
+                const activityTitles = activities.map(activity => activity.title);
+                const activityTitlesString = activityTitles.join('\n');
+                const confirmed = confirm(`Are you sure you want to credit all completions of the following activities?\n\n${activityTitlesString}`);
                 if (!confirmed) {
                     return;
                 }
 
-                let userIdToEmail = scrapeUserIdToEmailMap();
+                const userIdToEmail = scrapeUserIdToEmailMap();
                 await creditAllAttempts(activities, userIdToEmail);
             }
         });
@@ -786,13 +786,13 @@ if (!document.body.classList.contains('mce-content-body')) {
             id: "CreditAnySubmissions",
             title: "Give credit for any submissions",
             handler: async () => {
-                for (let userRow of document.querySelectorAll('.gradingtable table tbody tr')) {
-                    let submitted = !!userRow.querySelector('.submissionstatussubmitted');
-                    let gradeFrac = submitted ? 1 : 0;
+                for (const userRow of document.querySelectorAll('.gradingtable table tbody tr')) {
+                    const submitted = !!userRow.querySelector('.submissionstatussubmitted');
+                    const gradeFrac = submitted ? 1 : 0;
                     let quickGradeInput = userRow.querySelector('input[name^=quickgrade]');
                     if (quickGradeInput) {
-                        let outOfText = quickGradeInput.nextSibling.textContent;
-                        let maxGrade = parseInt(outOfText.match(/\d+/)[0]);
+                        const outOfText = quickGradeInput.nextSibling.textContent;
+                        const maxGrade = parseInt(outOfText.match(/\d+/)[0]);
                         const grade = maxGrade * gradeFrac;
                         fillInTextboxIfDifferent(quickGradeInput, grade.toFixed(1));
                     } else {
@@ -802,9 +802,9 @@ if (!document.body.classList.contains('mce-content-body')) {
                                 console.warn("Can't handle a select box for non-submitted assignments yet.");
                                 continue;
                             }
-                            let options = [...quickGradeInput.querySelectorAll('option')];
-                            let values = options.map(x => parseFloat(x.value));
-                            let maxGrade = Math.max(...values);
+                            const options = [...quickGradeInput.querySelectorAll('option')];
+                            const values = options.map(x => parseFloat(x.value));
+                            const maxGrade = Math.max(...values);
                             quickGradeInput.value = maxGrade;
                             quickGradeInput.dispatchEvent(new Event('change'));
                         }
@@ -817,10 +817,10 @@ if (!document.body.classList.contains('mce-content-body')) {
             id: "GradeFromRandom",
             title: "Start grading at a random student",
             handler: async () => {
-                let userRows = document.querySelectorAll('.gradingtable table tbody tr');
+                const userRows = document.querySelectorAll('.gradingtable table tbody tr');
                 while (true) {
-                    let randomRow = userRows[Math.floor(Math.random() * userRows.length)];
-                    let link = randomRow.querySelector('a[href*="/mod/assign/view.php"]');
+                    const randomRow = userRows[Math.floor(Math.random() * userRows.length)];
+                    const link = randomRow.querySelector('a[href*="/mod/assign/view.php"]');
                     if (!link) { continue; }
                     window.location.href = link.href;
                     break;
@@ -839,8 +839,8 @@ if (!document.body.classList.contains('mce-content-body')) {
                         console.log("Missing or inconsistent label for", sel);
                         return;
                     }
-                    let label = sel.labels[0].textContent.trim();
-                    let opts = (
+                    const label = sel.labels[0].textContent.trim();
+                    const opts = (
                         [...sel.querySelectorAll('[label="Grade items"] option')]
                         .filter(x => x.textContent.endsWith(label))
                     );
@@ -855,12 +855,12 @@ if (!document.body.classList.contains('mce-content-body')) {
     }
 
     function scrapeUserIdToEmailMap() {
-        let userIdToEmail = new Map();
-        let userRows = document.querySelectorAll('.gradingtable table tbody tr');
-        for (let userRow of userRows) {
-            let email = userRow.querySelector('.email').textContent;
-            let linkWithUserId = userRow.querySelector('a[href*="user/view.php"]');
-            let userId = new URL(linkWithUserId.href).searchParams.get('id');
+        const userIdToEmail = new Map();
+        const userRows = document.querySelectorAll('.gradingtable table tbody tr');
+        for (const userRow of userRows) {
+            const email = userRow.querySelector('.email').textContent;
+            const linkWithUserId = userRow.querySelector('a[href*="user/view.php"]');
+            const userId = new URL(linkWithUserId.href).searchParams.get('id');
             userIdToEmail.set(userId, email);
         }
         return userIdToEmail;
@@ -868,12 +868,12 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     // Hack: group selection box bigger:
     function hackGroupSelect() {
-        let elt = document.getElementById('addselect');
+        const elt = document.getElementById('addselect');
         if (!elt) return;
         elt.setAttribute('size', '40');
         const sortCompare = (a, b) => {
-            let numA = parseInt(a.textContent.match(/\((\d+)\)\s*$/)?.[1] ?? '0', 10);
-            let numB = parseInt(b.textContent.match(/\((\d+)\)\s*$/)?.[1] ?? '0', 10);
+            const numA = parseInt(a.textContent.match(/\((\d+)\)\s*$/)?.[1] ?? '0', 10);
+            const numB = parseInt(b.textContent.match(/\((\d+)\)\s*$/)?.[1] ?? '0', 10);
             if (numA === numB) {
                 return a.textContent.localeCompare(b.textContent);
             }
@@ -883,15 +883,15 @@ if (!document.body.classList.contains('mce-content-body')) {
             if (option.textContent.match(/\(0\)$/)) option.style.color = 'red';
             if (option.textContent.match(/\(1\)$/)) option.style.color = 'green';
         };
-        let groups = elt.querySelectorAll('optgroup');
+        const groups = elt.querySelectorAll('optgroup');
         if (groups.length > 0) {
-            for (let group of groups) {
-                let options = [...group.querySelectorAll('option')];
+            for (const group of groups) {
+                const options = [...group.querySelectorAll('option')];
                 options.sort(sortCompare);
                 options.forEach(option => { group.appendChild(option); styleOption(option); });
             }
         } else {
-            let options = [...elt.querySelectorAll('option')];
+            const options = [...elt.querySelectorAll('option')];
             options.sort(sortCompare);
             options.forEach(option => { elt.appendChild(option); styleOption(option); });
         }
@@ -923,17 +923,17 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     async function scrapeAllQuickGradeComments() {
         const allComments = new Map();
-        for (let activityHref of document.querySelectorAll('a[href*="/mod/assign/view"]')) {
-            let activityId = new URL(activityHref.href).searchParams.get('id');
+        for (const activityHref of document.querySelectorAll('a[href*="/mod/assign/view"]')) {
+            const activityId = new URL(activityHref.href).searchParams.get('id');
             if (!activityId) { continue }
             if (allComments.has(activityId)) { continue; }
 
             const gradingUrl = activityHref.href + '&action=grading';
-            let response = await fetch(gradingUrl);
-            let text = await response.text();
-            let doc = new DOMParser().parseFromString(text, 'text/html');
-            let comments = [...doc.querySelectorAll('.gradingtable [id^=quickgrade_comments]')].map(x => x.value);
-            let name = doc.querySelector('.page-header-headings h1').textContent;
+            const response = await fetch(gradingUrl);
+            const text = await response.text();
+            const doc = new DOMParser().parseFromString(text, 'text/html');
+            const comments = [...doc.querySelectorAll('.gradingtable [id^=quickgrade_comments]')].map(x => x.value);
+            const name = doc.querySelector('.page-header-headings h1').textContent;
             allComments.set(activityId, {name, comments});
         }
         return allComments;
@@ -941,8 +941,8 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     function scrapeAndStoreAllQuickGradeComments() {
         scrapeAllQuickGradeComments().then(comments => {
-            let storageId = `all-quick-grade-comments-course-${courseId}`;
-            let commentsAsObject = Object.fromEntries(comments);
+            const storageId = `all-quick-grade-comments-course-${courseId}`;
+            const commentsAsObject = Object.fromEntries(comments);
             localStorage.setItem(storageId, JSON.stringify(commentsAsObject));
         });
     }
@@ -963,10 +963,10 @@ if (!document.body.classList.contains('mce-content-body')) {
                 id: "ShowQuickGradeComments",
                 title: "Show Quick-Grade Comments",
                 handler: () => {
-                    let popup = window.open('', 'quick-grade-comments', 'width=400,height=600');
+                    const popup = window.open('', 'quick-grade-comments', 'width=400,height=600');
                     popup.document.body.innerHTML = comments.join('\n\n');
                     popup.document.body.style.backgroundColor = '#f5f5f5';
-                    let styleElt = popup.document.createElement('style')
+                    const styleElt = popup.document.createElement('style')
                     styleElt.textContent = `
                         h1, h2, h3, h4, h5, h6 { margin: 0; }
                     `;
@@ -978,25 +978,25 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     // Inject quick-comment buttons into attempt review page
     if (window.location.pathname === '/mod/quiz/review.php') {
-        let attemptId = new URL(window.location.href).searchParams.get('attempt');
+        const attemptId = new URL(window.location.href).searchParams.get('attempt');
 
         document.querySelectorAll('.commentlink a').forEach(commentLink => {
-            let target = commentLink.getAttribute('href');
+            const target = commentLink.getAttribute('href');
 
-            let button = document.createElement('button');
+            const button = document.createElement('button');
             button.textContent = "Quick comment";
             button.style.marginLeft = '1em';
             commentLink.parentNode.appendChild(button);
 
             button.addEventListener('click', async (event) => {
                 event.preventDefault();
-                let text = await (await fetch(target)).text();
+                const text = await (await fetch(target)).text();
 
-                let doc = new DOMParser().parseFromString(text, 'text/html');
+                const doc = new DOMParser().parseFromString(text, 'text/html');
 
-                let form = new FormData();
+                const form = new FormData();
                 doc.querySelectorAll('#manualgradingform input').forEach(inputElement => {
-                    let name = inputElement.name;
+                    const name = inputElement.name;
                     let value = inputElement.value;
                     if (name.endsWith('-mark')) {
                         value = "" + prompt("Grade?", value);
@@ -1004,7 +1004,7 @@ if (!document.body.classList.contains('mce-content-body')) {
                     form.append(name, value);
                 });
 
-                let response = await fetch(target, {
+                const response = await fetch(target, {
                     method: 'POST',
                     body: form
                 });
@@ -1015,16 +1015,16 @@ if (!document.body.classList.contains('mce-content-body')) {
     // Inject export-one button into edit-quiz page
     if (window.location.pathname === '/mod/quiz/edit.php') {
         document.querySelectorAll('.mod-quiz-edit-content a[href*="/question.php"]').forEach(questionLink => {
-            let questionId = new URL(questionLink.href).searchParams.get('id');
-            let cmid = new URL(questionLink.href).searchParams.get('cmid');
-            let row = questionLink.closest('.activity');
-            let actionsSpan = row.querySelector('.actions');
-            let exportButton = document.createElement('button');
+            const questionId = new URL(questionLink.href).searchParams.get('id');
+            const cmid = new URL(questionLink.href).searchParams.get('cmid');
+            const row = questionLink.closest('.activity');
+            const actionsSpan = row.querySelector('.actions');
+            const exportButton = document.createElement('button');
             exportButton.textContent = ">";
             actionsSpan.appendChild(exportButton);
             exportButton.addEventListener('click', async (event) => {
                 event.preventDefault();
-                let exportUrl = `/question/exportone.php?cmid=${cmid}&id=${questionId}&sesskey=${window.M.cfg.sesskey}`;
+                const exportUrl = `/question/exportone.php?cmid=${cmid}&id=${questionId}&sesskey=${window.M.cfg.sesskey}`;
                 window.location = exportUrl;
             }, false);
         });
@@ -1033,16 +1033,16 @@ if (!document.body.classList.contains('mce-content-body')) {
     // Inject next-feedback navigation on single-view page
     if (window.location.pathname === '/grade/report/singleview/index.php') {
         const navigateFeedback = (delta) => {
-            let curInput = document.activeElement;
+            const curInput = document.activeElement;
             if (curInput.tagName !== 'INPUT' || !curInput.name.startsWith('feedback')) {
                 return;
             }
-            let curRow = curInput.closest('tr');
-            let desiredRow = (delta > 0) ? curRow.nextElementSibling : curRow.previousElementSibling;
+            const curRow = curInput.closest('tr');
+            const desiredRow = (delta > 0) ? curRow.nextElementSibling : curRow.previousElementSibling;
             if (!desiredRow) {
                 return;
             }
-            let nextInput = desiredRow.querySelector('[name^=feedback]');
+            const nextInput = desiredRow.querySelector('[name^=feedback]');
             if (nextInput) {
                 nextInput.focus();
             }

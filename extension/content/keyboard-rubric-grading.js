@@ -8,7 +8,7 @@
 // R  : Reset
 // G  : Filter to Requires Grading
 
-'use strict';
+
 
 // Abort if we're inside a tinymce editor.
 if (!document.body.classList.contains('mce-content-body')) {
@@ -24,29 +24,29 @@ if (!document.body.classList.contains('mce-content-body')) {
             criterionIdx = 0;
             document.querySelector('[data-region="grading-actions-form"] [name="resetbutton"]').click();
         } else if (event.key === 'G') {
-            let elt = document.querySelector('[data-region="configure-filters"] [name="filter"]');
+            const elt = document.querySelector('[data-region="configure-filters"] [name="filter"]');
             elt.value = 'requiregrading';
             elt.closest('select').dispatchEvent(new Event("change", {bubbles: true}));
         } else if (event.key === 'f' || event.key === '_' || (event.key >= '0' && event.key <= '9')) {
-            let rubric = document.querySelector('.gradingform_rubric');
+            const rubric = document.querySelector('.gradingform_rubric');
             if (!rubric) return;
-            let criteria = [...rubric.querySelectorAll('tr.criterion')];
+            const criteria = [...rubric.querySelectorAll('tr.criterion')];
 
             for (let i = 0; i < criteria.length; i++) {
-                let criteriaOpts = [...criteria[i].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
-                let scores = criteriaOpts.map((opt) => +opt.querySelector('.scorevalue').innerText);
+                const criteriaOpts = [...criteria[i].querySelector('[role="radiogroup"]').querySelectorAll('[role="radio"]')];
+                const scores = criteriaOpts.map((opt) => +opt.querySelector('.scorevalue').innerText);
                 if (event.key === 'f') {
-                    let idxMaxScore = scores.indexOf(Math.max(...scores));
+                    const idxMaxScore = scores.indexOf(Math.max(...scores));
                     criteriaOpts[idxMaxScore].click();
                     criterionIdx = 0;
                 } else if (event.key === '_') {
-                    let idxMinScore = scores.indexOf(Math.min(...scores));
+                    const idxMinScore = scores.indexOf(Math.min(...scores));
                     criteriaOpts[idxMinScore].click();
                     criterionIdx = 0;
                 } else {
                     if (criterionIdx !== i) continue;
-                    let targetScore = +event.key;
-                    let idx = scores.indexOf(targetScore);
+                    const targetScore = +event.key;
+                    const idx = scores.indexOf(targetScore);
                     if (idx >= 0) {
                         criteriaOpts[idx].click();
                         criterionIdx = (criterionIdx + 1) % criteria.length;

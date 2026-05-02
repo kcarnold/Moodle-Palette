@@ -1,9 +1,9 @@
 // Make Retrieval Quiz — palette command to create a retrieval quiz via Moodle's form API.
 // Registers into window.moodlePalette.
 
-'use strict';
 
-(function() {
+
+(() => {
 
     // Build and inject the dialog
     const dialog = document.createElement('dialog');

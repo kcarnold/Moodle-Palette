@@ -1,14 +1,14 @@
 // Quiz Ninja — Quiz-specific commands for the shared Moodle Palette.
 // Registers into window.moodlePalette when on a quiz page.
 
-'use strict';
 
-(function() {
 
-    let searchParams = new URLSearchParams(document.location.search);
+(() => {
+
+    const searchParams = new URLSearchParams(document.location.search);
     let quizId = null;
     document.body.classList.forEach(x => {
-        let match = /^cmid-(\d+)$/.exec(x);
+        const match = /^cmid-(\d+)$/.exec(x);
         if (match) {
             quizId = match[1];
         }
@@ -29,7 +29,7 @@
         go("/course/modedit.php", `?update=${activityId}&return=1`);
     }
 
-    let commands = [
+    const commands = [
         {
             id: "QuizIndex",
             title: "Quiz Index",
@@ -79,11 +79,11 @@
             id: "CreditAllShortAnswers",
             title: "Credit All Short Answers",
             handler: () => {
-                let feedbackText = prompt("Text to use", "Credit was given automatically.");
-                window.$('input[name$="-mark"]').each(function() { let x = window.$(this), maxMark = x.next('[name$=maxmark]').val(); x.val(maxMark); })
+                const feedbackText = prompt("Text to use", "Credit was given automatically.");
+                window.$('input[name$="-mark"]').each(function() { const x = window.$(this), maxMark = x.next('[name$=maxmark]').val(); x.val(maxMark); })
                 window.$('.editor_atto_content').each(function() { window.Y.one(this).setHTML(feedbackText); })
-                setTimeout(function() { window.$('.icon.fa-code').click(); }, 1*1000);
-                setTimeout(function() { window.$('.icon.fa-code').click(); }, 5*1000);
+                setTimeout(() => { window.$('.icon.fa-code').click(); }, 1*1000);
+                setTimeout(() => { window.$('.icon.fa-code').click(); }, 5*1000);
             }
         },
         {
@@ -97,12 +97,12 @@
             handler: () => {
                 document.querySelectorAll('.qtype_essay_editor.qtype_essay_response.readonly').forEach(x => {x.style.minHeight=''});
                 document.querySelectorAll('.que.correct').forEach(x => {
-                    let wrapper = document.createElement('details');
-                    let header = x.previousElementSibling;
+                    const wrapper = document.createElement('details');
+                    const header = x.previousElementSibling;
                     if (!header) return;
                     header.style.display = 'inline';
                     x.parentNode.insertBefore(wrapper, header);
-                    let summary = document.createElement('summary');
+                    const summary = document.createElement('summary');
                     summary.appendChild(header)
                     wrapper.appendChild(summary);
                     wrapper.appendChild(x);
@@ -113,8 +113,8 @@
             id: "NextUngraded",
             title: "Go next ungraded manual feedback",
             handler: () => {
-                for (let attempt of document.querySelectorAll('.que')) {
-                    let pointsBox = attempt.querySelector('input[name$="-mark"]');
+                for (const attempt of document.querySelectorAll('.que')) {
+                    const pointsBox = attempt.querySelector('input[name$="-mark"]');
                     if (pointsBox && pointsBox.value.trim() === "") {
                         pointsBox.focus();
                         break;
@@ -130,7 +130,7 @@
         const allStudents = new Set(allComments.map(x => x.Name))
 
         function getGrade(name) {
-            for (let row of allComments) {
+            for (const row of allComments) {
                 if (name == row.name) {
                     allStudents.delete(name);
                     return row;
@@ -141,13 +141,13 @@
         }
 
         window.$('input[name$="-mark"]').each(function(idx) {
-            let elt = window.$(this);
-            let container = elt.parents('.que');
-            let parent = container.prevAll('h4').first().text();
-            let name = /Attempt number \d+ for (.+)$/.exec(parent)[1];
-            let grade = getGrade(name);
+            const elt = window.$(this);
+            const container = elt.parents('.que');
+            const parent = container.prevAll('h4').first().text();
+            const name = /Attempt number \d+ for (.+)$/.exec(parent)[1];
+            const grade = getGrade(name);
             elt.val(grade.score);
-            let editor = container.find('.editor_atto_content');
+            const editor = container.find('.editor_atto_content');
             if (editor.length != 1) {
                 console.warn("Failed to find editor " + name);
             }
@@ -156,25 +156,25 @@
 
         console.log(allStudents)
 
-        setTimeout(function() { window.$('.icon.fa-code').click(); }, 1*1000);
-        setTimeout(function() { window.$('.icon.fa-code').click(); }, 5*1000);
+        setTimeout(() => { window.$('.icon.fa-code').click(); }, 1*1000);
+        setTimeout(() => { window.$('.icon.fa-code').click(); }, 5*1000);
     }
 
     // Reuse Previous Grade — needs direct ninja access for dynamic children
     function setupReusePrev(ninja) {
-        let reusePrevAction = {
+        const reusePrevAction = {
             id: "ReusePrev",
             title: "Reuse Previous Manual Grade",
             hotkey: "cmd+alt+n",
             children: [],
             handler: () => {
-                let prevResponses = new Map();
-                for (let attempt of document.querySelectorAll('.que')) {
-                    let editor = attempt.querySelector('.editor_atto_content');
-                    let text = editor.textContent.trim();
+                const prevResponses = new Map();
+                for (const attempt of document.querySelectorAll('.que')) {
+                    const editor = attempt.querySelector('.editor_atto_content');
+                    const text = editor.textContent.trim();
                     if (text === "") continue;
-                    let points = attempt.querySelector('input[name$="-mark"]').value;
-                    let count = (prevResponses.get(text) || {count: 0}).count + 1;
+                    const points = attempt.querySelector('input[name$="-mark"]').value;
+                    const count = (prevResponses.get(text) || {count: 0}).count + 1;
                     prevResponses.set(text, {
                         text: text,
                         html: editor.innerHTML,
@@ -185,9 +185,9 @@
 
                 cleanupReuseGrades();
 
-                let sortedResponses = Array.from(prevResponses.values()).sort((a, b) => b.count - a.count);
-                for (let response of sortedResponses) {
-                    let id = "ReusePrev" + response.text;
+                const sortedResponses = Array.from(prevResponses.values()).sort((a, b) => b.count - a.count);
+                for (const response of sortedResponses) {
+                    const id = "ReusePrev" + response.text;
                     ninja.data.push({
                         id: id,
                         title: `(${response.points}): ${response.text}`,
@@ -206,30 +206,30 @@
         };
 
         function cleanupReuseGrades() {
-            for (let item of ninja.data.slice()) {
+            for (const item of ninja.data.slice()) {
                 if (item.id === "ReusePrev") {
                     item.children = [];
                 } else if (item.parent === "ReusePrev") {
-                    let index = ninja.data.indexOf(item);
+                    const index = ninja.data.indexOf(item);
                     ninja.data.splice(index, 1);
                 }
             }
         }
 
         function reusePriorResponseFromItem(item) {
-            let {response} = item;
-            let editor = lastFocusedEditor;
+            const {response} = item;
+            const editor = lastFocusedEditor;
             if (!editor) {
                 alert("No editor is focused.");
                 return;
             }
             editor.innerHTML = response.html;
-            let points = editor.closest('.que').querySelector('input[name$="-mark"]');
+            const points = editor.closest('.que').querySelector('input[name$="-mark"]');
             points.value = response.points;
 
-            let codeIcon = editor.closest('.que').querySelector('.icon.fa-code');
+            const codeIcon = editor.closest('.que').querySelector('.icon.fa-code');
             codeIcon.click();
-            setTimeout(function() { codeIcon.click(); }, .25*1000);
+            setTimeout(() => { codeIcon.click(); }, .25*1000);
 
             points.focus();
         }
@@ -239,7 +239,7 @@
 
     // Keep track of which Atto editor was last focused.
     let lastFocusedEditor = null;
-    document.addEventListener('focusin', function(e) {
+    document.addEventListener('focusin', (e) => {
         if (e.target.classList.contains('editor_atto_content')) {
             lastFocusedEditor = e.target;
             if (window.global && window.global.hotkeys) {
@@ -251,31 +251,31 @@
     // Check rubric items using keypress
     function editorKeypress(event) {
         if (!event.altKey) return;
-        let code = event.code;
+        const code = event.code;
         let toMark;
         if (event.code === 'Equal') {
             toMark = 'all';
         } else {
-            let match = /^Digit(\d)$/.exec(code);
+            const match = /^Digit(\d)$/.exec(code);
             if (!match) return;
-            let digit = match[1];
+            const digit = match[1];
             toMark = digit - 1;
         }
 
-        let rubricItems = [];
+        const rubricItems = [];
         event.target.closest('.que').querySelector('.qtext').querySelectorAll('li').forEach((li) => {
-            let inputBox = li.querySelector('input');
+            const inputBox = li.querySelector('input');
             if (!inputBox) return;
-            let curIndex = rubricItems.length;
+            const curIndex = rubricItems.length;
             let checked = inputBox.checked;
-            let text = li.textContent.trim();
+            const text = li.textContent.trim();
             if (toMark === 'all' || curIndex === toMark) {
                 inputBox.checked = checked = !checked;
             }
             rubricItems.push({text, checked});
         });
 
-        let rubricText = rubricItems.map((item) => {
+        const rubricText = rubricItems.map((item) => {
             return (item.checked ? "\u2611\uFE0F" : "\uD83D\uDD32") + " " + item.text;
         }).join("\n");
         navigator.clipboard.writeText(rubricText);
@@ -292,7 +292,7 @@
 
     // Autofocus search box.
     function autofocusSearchBox() {
-        let elt = document.querySelector('#id_override input[data-fieldtype="autocomplete"]');
+        const elt = document.querySelector('#id_override input[data-fieldtype="autocomplete"]');
         if (elt) elt.focus();
     }
     setTimeout(autofocusSearchBox, 500);
@@ -300,7 +300,7 @@
     // Register with the shared palette
     function doRegister(palette) {
         palette.register(commands);
-        let reusePrevAction = setupReusePrev(palette.ninja);
+        const reusePrevAction = setupReusePrev(palette.ninja);
         palette.register([reusePrevAction]);
     }
 
