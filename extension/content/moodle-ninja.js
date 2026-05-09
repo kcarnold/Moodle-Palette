@@ -423,54 +423,84 @@ if (!document.body.classList.contains('mce-content-body')) {
             }).join('');
         }
 
+        _trackPreviewBlob(blob) {
+            const url = URL.createObjectURL(blob);
+            this._previewBlobUrls.push(url);
+            this._blobUrls.push(url);
+            return url;
+        }
+
         async _previewZipEntry(entry, filename, previewArea) {
-            // Revoke previous preview blob URLs
             for (const url of this._previewBlobUrls) URL.revokeObjectURL(url);
             this._previewBlobUrls = [];
 
             previewArea.innerHTML = '<p class="fp-loading">Loading...</p>';
             try {
                 const ext = filename.split('.').pop().toLowerCase();
-                const textExts = new Set(['txt','py','js','ts','jsx','tsx','html','htm','css',
-                    'json','md','csv','xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini']);
-                const imageExts = new Set(['png','jpg','jpeg','gif','svg','webp','bmp']);
-
-                if (ext === 'ipynb') {
-                    const text = await entry.async('string');
-                    previewArea.innerHTML = '';
-                    previewArea.appendChild(this._renderNotebook(JSON.parse(text)));
-                } else if (textExts.has(ext)) {
-                    const text = await entry.async('string');
-                    const pre = document.createElement('pre');
-                    pre.className = 'fp-zip-code';
-                    pre.textContent = text;
-                    previewArea.innerHTML = '';
-                    previewArea.appendChild(pre);
-                } else if (imageExts.has(ext)) {
-                    const blob = await entry.async('blob');
-                    const url = URL.createObjectURL(blob);
-                    this._previewBlobUrls.push(url);
-                    this._blobUrls.push(url);
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.style.maxWidth = '100%';
-                    previewArea.innerHTML = '';
-                    previewArea.appendChild(img);
-                } else {
-                    const blob = await entry.async('blob');
-                    const url = URL.createObjectURL(blob);
-                    this._previewBlobUrls.push(url);
-                    this._blobUrls.push(url);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    a.textContent = `Download ${filename}`;
-                    previewArea.innerHTML = '';
-                    previewArea.appendChild(a);
-                }
+                const renderer = this._zipRenderers[ext] || this._zipRenderers._default;
+                const node = await renderer.call(this, entry, filename);
+                previewArea.innerHTML = '';
+                previewArea.appendChild(node);
             } catch (err) {
                 previewArea.innerHTML = `<p class="fp-error">Preview error: ${err.message}</p>`;
             }
+        }
+
+        get _zipRenderers() {
+            if (this.__zipRenderers) return this.__zipRenderers;
+
+            const asText = (cls) => async (entry) => {
+                const pre = document.createElement('pre');
+                pre.className = cls;
+                pre.textContent = await entry.async('string');
+                return pre;
+            };
+            const asMedia = (tag, mime, extraStyle = '') => async (entry) => {
+                const blob = await entry.async('blob');
+                const url = this._trackPreviewBlob(mime ? new Blob([blob], {type: mime}) : blob);
+                const el = document.createElement(tag);
+                el.src = url;
+                if (tag === 'video' || tag === 'audio') el.controls = true;
+                el.style.cssText = `max-width:100%;${extraStyle}`;
+                return el;
+            };
+            const asEmbedded = (mime) => async (entry) => {
+                const blob = await entry.async('blob');
+                const url = this._trackPreviewBlob(new Blob([blob], {type: mime}));
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.style.cssText = 'width:100%;height:100%;border:0;';
+                return iframe;
+            };
+            const asDownload = async (entry, filename) => {
+                const url = this._trackPreviewBlob(await entry.async('blob'));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.textContent = `Download ${filename}`;
+                return a;
+            };
+
+            const text = asText('fp-zip-code');
+            const image = asMedia('img');
+            const video = asMedia('video', '', 'max-height:100%;');
+            const audio = asMedia('audio');
+            const pdf = asEmbedded('application/pdf');
+            const ipynb = async (entry) => {
+                const data = JSON.parse(await entry.async('string'));
+                return this._renderNotebook(data);
+            };
+
+            const map = {ipynb, pdf, _default: asDownload};
+            const assign = (exts, fn) => exts.forEach(e => { map[e] = fn; });
+            assign(['txt','py','js','ts','jsx','tsx','html','htm','css','json','md','csv',
+                    'xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini'], text);
+            assign(['png','jpg','jpeg','gif','svg','webp','bmp'], image);
+            assign(['mp4','webm','ogv','mov'], video);
+            assign(['mp3','wav','ogg','m4a','flac'], audio);
+
+            this.__zipRenderers = map;
+            return map;
         }
     }
 
