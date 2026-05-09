@@ -153,6 +153,15 @@ if (!document.body.classList.contains('mce-content-body')) {
         return window._jszipPromise;
     }
 
+    function loadMammoth() {
+        if (window._mammothPromise) return window._mammothPromise;
+        window._mammothPromise = new Promise((resolve, reject) => {
+            require(['https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js'],
+                () => resolve(window.mammoth), reject);
+        });
+        return window._mammothPromise;
+    }
+
     class FilePanelElement extends HTMLElement {
         constructor() {
             super();
@@ -490,8 +499,17 @@ if (!document.body.classList.contains('mce-content-body')) {
                 const data = JSON.parse(await entry.async('string'));
                 return this._renderNotebook(data);
             };
+            const docx = async (entry) => {
+                const mammoth = await loadMammoth();
+                const arrayBuffer = await entry.async('arraybuffer');
+                const {value} = await mammoth.convertToHtml({arrayBuffer});
+                const div = document.createElement('div');
+                div.className = 'fp-zip-docx';
+                div.innerHTML = value;
+                return div;
+            };
 
-            const map = {ipynb, pdf, _default: asDownload};
+            const map = {ipynb, pdf, docx, _default: asDownload};
             const assign = (exts, fn) => exts.forEach(e => { map[e] = fn; });
             assign(['txt','py','js','ts','jsx','tsx','html','htm','css','json','md','csv',
                     'xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini'], text);
@@ -520,6 +538,10 @@ if (!document.body.classList.contains('mce-content-body')) {
             file-panel .fp-zip-tree a { cursor:pointer; }
             file-panel .fp-zip-preview { flex:1; overflow-y:auto; padding:.5em; }
             file-panel .fp-zip-code { white-space:pre-wrap; word-break:break-all; font-size:.85em; margin:0; }
+            file-panel .fp-zip-docx { max-width:50em; padding:.5em 1em; line-height:1.4; }
+            file-panel .fp-zip-docx table { border-collapse:collapse; }
+            file-panel .fp-zip-docx td, file-panel .fp-zip-docx th { border:1px solid #ccc; padding:.25em .5em; }
+            file-panel .fp-zip-docx img { max-width:100%; }
             file-panel .fp-loading { color:#666; font-style:italic; }
             file-panel .fp-error { color:red; }
             file-panel .fp-nb-scroll { height:100%; overflow-y:auto; padding:.5em; box-sizing:border-box; }
