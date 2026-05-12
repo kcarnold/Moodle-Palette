@@ -445,9 +445,10 @@ if (!document.body.classList.contains('mce-content-body')) {
 
             previewArea.innerHTML = '<p class="fp-loading">Loading...</p>';
             try {
+                const blob = await entry.async('blob');
                 const ext = filename.split('.').pop().toLowerCase();
-                const renderer = this._zipRenderers[ext] || this._zipRenderers._default;
-                const node = await renderer.call(this, entry, filename);
+                const renderer = this._renderers[ext] || this._renderers._default;
+                const node = await renderer.call(this, blob, filename);
                 previewArea.innerHTML = '';
                 previewArea.appendChild(node);
             } catch (err) {
@@ -455,17 +456,16 @@ if (!document.body.classList.contains('mce-content-body')) {
             }
         }
 
-        get _zipRenderers() {
-            if (this.__zipRenderers) return this.__zipRenderers;
+        get _renderers() {
+            if (this.__renderers) return this.__renderers;
 
-            const asText = (cls) => async (entry) => {
+            const asText = (cls) => async (blob) => {
                 const pre = document.createElement('pre');
                 pre.className = cls;
-                pre.textContent = await entry.async('string');
+                pre.textContent = await blob.text();
                 return pre;
             };
-            const asMedia = (tag, mime, extraStyle = '') => async (entry) => {
-                const blob = await entry.async('blob');
+            const asMedia = (tag, mime, extraStyle = '') => async (blob) => {
                 const url = this._trackPreviewBlob(mime ? new Blob([blob], {type: mime}) : blob);
                 const el = document.createElement(tag);
                 el.src = url;
@@ -473,16 +473,15 @@ if (!document.body.classList.contains('mce-content-body')) {
                 el.style.cssText = `max-width:100%;${extraStyle}`;
                 return el;
             };
-            const asEmbedded = (mime) => async (entry) => {
-                const blob = await entry.async('blob');
+            const asEmbedded = (mime) => async (blob) => {
                 const url = this._trackPreviewBlob(new Blob([blob], {type: mime}));
                 const iframe = document.createElement('iframe');
                 iframe.src = url;
                 iframe.style.cssText = 'width:100%;height:100%;border:0;';
                 return iframe;
             };
-            const asDownload = async (entry, filename) => {
-                const url = this._trackPreviewBlob(await entry.async('blob'));
+            const asDownload = async (blob, filename) => {
+                const url = this._trackPreviewBlob(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = filename;
@@ -495,13 +494,13 @@ if (!document.body.classList.contains('mce-content-body')) {
             const video = asMedia('video', '', 'max-height:100%;');
             const audio = asMedia('audio');
             const pdf = asEmbedded('application/pdf');
-            const ipynb = async (entry) => {
-                const data = JSON.parse(await entry.async('string'));
+            const ipynb = async (blob) => {
+                const data = JSON.parse(await blob.text());
                 return this._renderNotebook(data);
             };
-            const docx = async (entry) => {
+            const docx = async (blob) => {
                 const mammoth = await loadMammoth();
-                const arrayBuffer = await entry.async('arraybuffer');
+                const arrayBuffer = await blob.arrayBuffer();
                 const {value} = await mammoth.convertToHtml({arrayBuffer});
                 const div = document.createElement('div');
                 div.className = 'fp-zip-docx';
@@ -517,7 +516,7 @@ if (!document.body.classList.contains('mce-content-body')) {
             assign(['mp4','webm','ogv','mov'], video);
             assign(['mp3','wav','ogg','m4a','flac'], audio);
 
-            this.__zipRenderers = map;
+            this.__renderers = map;
             return map;
         }
     }
