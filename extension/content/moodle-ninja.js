@@ -165,8 +165,7 @@ if (!document.body.classList.contains('mce-content-body')) {
     class FilePanelElement extends HTMLElement {
         constructor() {
             super();
-            this._blobUrls = [];
-            this._previewBlobUrls = [];
+            this._blobURLs = [];
         }
 
         disconnectedCallback() {
@@ -185,15 +184,9 @@ if (!document.body.classList.contains('mce-content-body')) {
         }
 
         _cleanup() {
-            for (const url of this._blobUrls) URL.revokeObjectURL(url);
-            this._blobUrls = [];
-            this._previewBlobUrls = [];
+            for (const url of this._blobURLs) URL.revokeObjectURL(url);
+            this._blobURLs = [];
             this.innerHTML = '';
-        }
-
-        _trackBlob(url) {
-            this._blobUrls.push(url);
-            return url;
         }
 
         _showLoading(msg) {
@@ -209,44 +202,23 @@ if (!document.body.classList.contains('mce-content-body')) {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const blob = await response.blob();
             const mimeType = blob.type.split(';')[0];
+            const filename = href.split('?')[0];
+            const ext = filename.split('.').pop().toLowerCase();
             const isZip = mimeType === 'application/zip'
                        || mimeType === 'application/x-zip-compressed'
-                       || href.split('?')[0].toLowerCase().endsWith('.zip');
-            const isIpynb = href.split('?')[0].toLowerCase().endsWith('.ipynb');
+                       || ext === '.zip';
             if (isZip) {
                 await this._showZip(blob);
-            } else if (isIpynb) {
-                const text = await blob.text();
-                const scroll = document.createElement('div');
-                scroll.className = 'fp-nb-scroll';
-                scroll.appendChild(this._renderNotebook(JSON.parse(text)));
+            } else {
+                const renderer = this._renderers[ext] || this._renderers._default;
                 this.innerHTML = '';
-                this.appendChild(scroll);
-            } else {
-                await this._showFile(blob, mimeType);
-            }
-        }
-
-        async _showFile(blob, mimeType) {
-            if (mimeType === 'application/octet-stream') {
-                blob = new Blob([blob], {type: 'text/plain;charset=utf-8'});
-                mimeType = 'text/plain';
-            }
-            const iframe = document.createElement('iframe');
-            iframe.setAttribute('sandbox', 'allow-scripts allow-downloads');
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            const allowed = ['text/plain', 'text/html', 'application/pdf'];
-            if (!allowed.includes(mimeType)) {
-                iframe.srcdoc = `Click the file name to download it. (Not displaying because the response type was ${blob.type}.)`;
-            } else {
-                if (mimeType === 'text/html') {
-                    blob = await this._rewriteHtmlBlob(blob);
+                try {
+                    const node = await renderer.call(this, blob, filename);
+                    this.appendChild(node);
+                } catch (err) {
+                    this._showError(err);
                 }
-                iframe.src = this._trackBlob(URL.createObjectURL(blob));
             }
-            this.innerHTML = '';
-            this.appendChild(iframe);
         }
 
         async _rewriteHtmlBlob(blob) {
@@ -334,7 +306,7 @@ if (!document.body.classList.contains('mce-content-body')) {
 
         _renderNotebook(nb) {
             const wrap = document.createElement('div');
-            wrap.className = 'fp-nb';
+            wrap.className = 'fp-nb fp-nb-scroll';
             for (const cell of nb.cells || []) {
                 const cellDiv = document.createElement('div');
                 cellDiv.className = `fp-nb-cell fp-nb-${cell.cell_type}`;
@@ -434,14 +406,13 @@ if (!document.body.classList.contains('mce-content-body')) {
 
         _trackPreviewBlob(blob) {
             const url = URL.createObjectURL(blob);
-            this._previewBlobUrls.push(url);
-            this._blobUrls.push(url);
+            this._blobURLs.push(url);
             return url;
         }
 
         async _previewZipEntry(entry, filename, previewArea) {
-            for (const url of this._previewBlobUrls) URL.revokeObjectURL(url);
-            this._previewBlobUrls = [];
+            for (const url of this._blobURLs) URL.revokeObjectURL(url);
+            this._blobURLs = [];
 
             previewArea.innerHTML = '<p class="fp-loading">Loading...</p>';
             try {
@@ -473,8 +444,14 @@ if (!document.body.classList.contains('mce-content-body')) {
                 el.style.cssText = `max-width:100%;${extraStyle}`;
                 return el;
             };
-            const asEmbedded = (mime) => async (blob) => {
-                const url = this._trackPreviewBlob(new Blob([blob], {type: mime}));
+            const asEmbedded = (mime, prefilter) => async (blob) => {
+                if (prefilter) {
+                    blob = await prefilter(blob);
+                } else {
+                    // Ensure correct MIME type for embedding
+                    blob = new Blob([blob], {type: mime});
+                }
+                const url = this._trackPreviewBlob(blob);
                 const iframe = document.createElement('iframe');
                 iframe.src = url;
                 iframe.style.cssText = 'width:100%;height:100%;border:0;';
@@ -507,10 +484,11 @@ if (!document.body.classList.contains('mce-content-body')) {
                 div.innerHTML = value;
                 return div;
             };
+            const html = asEmbedded('text/html', (blob) => this._rewriteHtmlBlob(blob));
 
-            const map = {ipynb, pdf, docx, _default: asDownload};
+            const map = {ipynb, pdf, docx, html, htm: html, _default: asDownload};
             const assign = (exts, fn) => exts.forEach(e => { map[e] = fn; });
-            assign(['txt','py','js','ts','jsx','tsx','html','htm','css','json','md','csv',
+            assign(['txt','py','js','ts','jsx','tsx','css','json','md','csv',
                     'xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini'], text);
             assign(['png','jpg','jpeg','gif','svg','webp','bmp'], image);
             assign(['mp4','webm','ogv','mov'], video);
