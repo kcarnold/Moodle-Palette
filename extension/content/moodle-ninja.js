@@ -255,6 +255,7 @@ if (!document.body.classList.contains('mce-content-body')) {
             const root = {children: new Map()};
             for (const [path, entry] of Object.entries(zip.files)) {
                 if (entry.dir) continue;
+                if (path.startsWith('__MACOSX/') || path.includes('/__MACOSX/') || path.includes('.DS_Store')) continue;
                 const parts = path.split('/');
                 let node = root;
                 for (let i = 0; i < parts.length - 1; i++) {
@@ -486,7 +487,12 @@ if (!document.body.classList.contains('mce-content-body')) {
             };
             const html = asEmbedded('text/html', (blob) => this._rewriteHtmlBlob(blob));
 
-            const map = {ipynb, pdf, docx, html, htm: html, _default: asDownload};
+            const zip = async (blob) => {
+                const JSZip = await loadJSZip();
+                const nested = await JSZip.loadAsync(blob);
+                return this._buildZipTree(nested);
+            };
+            const map = {ipynb, pdf, docx, html, htm: html, zip, _default: asDownload};
             const assign = (exts, fn) => exts.forEach(e => { map[e] = fn; });
             assign(['txt','py','js','ts','jsx','tsx','css','json','md','csv',
                     'xml','yaml','yml','r','java','c','cpp','h','sh','sql','toml','ini'], text);
@@ -507,13 +513,13 @@ if (!document.body.classList.contains('mce-content-body')) {
         const style = document.createElement('style');
         style.id = 'fp-styles';
         style.textContent = `
-            file-panel { display: contents; }
-            file-panel .fp-zip-browser { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+            file-panel { display:flex; flex-direction:column; height:100%; }
+            file-panel .fp-zip-browser { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
             file-panel .fp-zip-tree { list-style:none; padding:0 0 0 1em; margin:0; overflow-y:auto; max-height:40%; border-bottom:1px solid #ccc; font-size:.9em; }
             file-panel .fp-zip-tree li { padding:2px 0; }
             file-panel .fp-zip-tree details > summary { cursor:pointer; }
             file-panel .fp-zip-tree a { cursor:pointer; }
-            file-panel .fp-zip-preview { flex:1; overflow-y:auto; padding:.5em; }
+            file-panel .fp-zip-preview { flex:1; min-height:0; overflow-y:auto; padding:.5em; display:flex; flex-direction:column; }
             file-panel .fp-zip-code { white-space:pre-wrap; word-break:break-all; font-size:.85em; margin:0; }
             file-panel .fp-zip-docx { max-width:50em; padding:.5em 1em; line-height:1.4; }
             file-panel .fp-zip-docx table { border-collapse:collapse; }
