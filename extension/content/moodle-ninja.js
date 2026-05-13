@@ -157,7 +157,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         if (window._mammothPromise) return window._mammothPromise;
         window._mammothPromise = new Promise((resolve, reject) => {
             require(['https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js'],
-                () => resolve(window.mammoth), reject);
+                (m) => resolve(m || window.mammoth), reject);
         });
         return window._mammothPromise;
     }
