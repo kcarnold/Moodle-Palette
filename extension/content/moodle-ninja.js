@@ -513,7 +513,7 @@ if (!document.body.classList.contains('mce-content-body')) {
         const style = document.createElement('style');
         style.id = 'fp-styles';
         style.textContent = `
-            file-panel { display:flex; flex-direction:column; height:100%; }
+            file-panel { display:flex; flex-direction:column; height:100%; overflow:auto; }
             file-panel .fp-zip-browser { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
             file-panel .fp-zip-tree { list-style:none; padding:0 0 0 1em; margin:0; overflow-y:auto; max-height:40%; border-bottom:1px solid #ccc; font-size:.9em; }
             file-panel .fp-zip-tree li { padding:2px 0; }
