@@ -15,11 +15,16 @@ I have a few other scripts too, it’s a hodgepodge at the moment but I’d like
 
 See `extension/`.
 
+
 In that folder, run:
 
 ```bash
 web-ext build
 ```
+
+(for iterative development, add `--overwrite-dest`)
+
+Side-loading: `about:debugging`, click "This Firefox", "Load temporary add-in".
 
 To sign it (so it stays loaded):
 
