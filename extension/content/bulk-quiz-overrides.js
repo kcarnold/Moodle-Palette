@@ -69,40 +69,7 @@
 
     // ---------- fetching helpers ----------
 
-    async function fetchDoc(url) {
-        const res = await fetch(url, {credentials: 'include'});
-        if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
-        const html = await res.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        // Make relative links (e.g. "view.php?id=123" on the quiz index) resolve
-        // against the fetched page, so a.href gives the absolute URL.
-        if (!doc.querySelector('base')) {
-            const base = doc.createElement('base');
-            base.href = res.url;
-            doc.head.prepend(base);
-        }
-        return {doc, res};
-    }
-
-    async function pool(items, limit, fn) {
-        let i = 0;
-        const workers = Array.from({length: Math.min(limit, items.length)}, async () => {
-            while (i < items.length) {
-                const item = items[i++];
-                await fn(item);
-            }
-        });
-        await Promise.all(workers);
-    }
-
-    // Pass an absolute URL (a.href on a fetched doc, which has a <base>).
-    function cmidFromHref(href) {
-        try {
-            const u = new URL(href);
-            if (!u.pathname.endsWith('/mod/quiz/view.php')) return null;
-            return u.searchParams.get('id');
-        } catch { return null; }
-    }
+    const {fetchDoc, pool, cmidFromHref, loadQuizOverrides} = window.moodlePaletteQuizOverrides;
 
     function findQuizLink(el) {
         return [...el.querySelectorAll('a[href]')].find(a => cmidFromHref(a.href));
@@ -152,25 +119,9 @@
         return result;
     }
 
-    // Returns {overrideId, summary} or null.
+    // Returns {overrideId, summary, ...} or null.
     async function loadExistingOverride(cmid, userId) {
-        const {doc} = await fetchDoc(`/mod/quiz/overrides.php?cmid=${cmid}&mode=user`);
-        for (const a of doc.querySelectorAll('a[href*="/user/view.php"]')) {
-            const u = new URL(a.href);
-            if (u.searchParams.get('id') !== String(userId)) continue;
-            const firstRow = a.closest('tr');
-            if (!firstRow) continue;
-            const span = parseInt(a.closest('td')?.getAttribute('rowspan') || '1', 10);
-            const rows = [firstRow];
-            for (let r = firstRow.nextElementSibling; r && rows.length < span; r = r.nextElementSibling) rows.push(r);
-            const parts = rows.map(r => [...r.querySelectorAll('td:not([rowspan])')]
-                .map(td => td.textContent.trim()).join(': '));
-            const edit = [...firstRow.querySelectorAll('a[href*="overrideedit.php"]')]
-                .map(e => new URL(e.href))
-                .find(e => !e.searchParams.get('action') && e.searchParams.get('id'));
-            return {overrideId: edit?.searchParams.get('id') || null, summary: parts.join('; ')};
-        }
-        return null;
+        return (await loadQuizOverrides(cmid)).get(String(userId)) || null;
     }
 
     // ---------- dates ----------

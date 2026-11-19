@@ -30,7 +30,13 @@
     },
     {
       "matches": ["https://moodle.calvin.edu/mod/quiz/overrideedit.php*"],
-      "js": ["content/bulk-quiz-overrides.js"],
+      "js": ["content/quiz-override-lib.js", "content/bulk-quiz-overrides.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://moodle.calvin.edu/grade/report/user/index.php*"],
+      "js": ["content/quiz-override-lib.js", "content/user-report-overrides.js"],
       "run_at": "document_idle",
       "world": "MAIN"
     },
