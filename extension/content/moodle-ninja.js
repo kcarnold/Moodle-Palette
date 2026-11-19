@@ -79,11 +79,8 @@ if (!document.body.classList.contains('mce-content-body')) {
 
     const activityDirectoryFlat = activityDirectory.flatMap(x => x.activities);
 
-    // ninja-keys is loaded by content/load-ninja-keys.js (ISOLATED world, document_start).
-    const ninja = document.createElement('ninja-keys');
-    ninja.setAttribute('style', '--ninja-z-index: 1050;');
-    ninja.setAttribute('openHotkey', "cmd+p,ctrl+p");
-    document.body.appendChild(ninja);
+    // CommandPalette is defined by content/palette.js (loaded just before this script).
+    const ninja = new window.CommandPalette({openHotkey: "cmd+p,ctrl+p"});
 
     // Create the go-to-activity action hierarchy.
     function activityHandler(item) {

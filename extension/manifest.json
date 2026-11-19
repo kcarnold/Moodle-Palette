@@ -1,24 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Moodle Palette",
-  "version": "0.6",
+  "version": "0.8",
   "description": "Keyboard shortcuts and command palette for Moodle",
-  "web_accessible_resources": [
-    {
-      "resources": ["lib/ninja-keys.mjs"],
-      "matches": ["https://moodle.calvin.edu/*"]
-    }
-  ],
   "content_scripts": [
     {
       "matches": ["https://moodle.calvin.edu/*"],
-      "js": ["content/load-ninja-keys.js"],
-      "run_at": "document_start",
-      "world": "ISOLATED"
-    },
-    {
-      "matches": ["https://moodle.calvin.edu/*"],
-      "js": ["content/moodle-ninja.js"],
+      "js": ["lib/fuzzysort.js", "content/palette.js", "content/moodle-ninja.js"],
       "run_at": "document_idle",
       "world": "MAIN"
     },
@@ -37,6 +25,12 @@
     {
       "matches": ["https://moodle.calvin.edu/*"],
       "js": ["content/make-retrieval-quiz.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://moodle.calvin.edu/mod/quiz/overrideedit.php*"],
+      "js": ["content/bulk-quiz-overrides.js"],
       "run_at": "document_idle",
       "world": "MAIN"
     },

@@ -165,7 +165,6 @@
         const reusePrevAction = {
             id: "ReusePrev",
             title: "Reuse Previous Manual Grade",
-            hotkey: "cmd+alt+n",
             children: [],
             handler: () => {
                 const prevResponses = new Map();
@@ -242,9 +241,6 @@
     document.addEventListener('focusin', (e) => {
         if (e.target.classList.contains('editor_atto_content')) {
             lastFocusedEditor = e.target;
-            if (window.global && window.global.hotkeys) {
-                window.global.hotkeys.filter = _event => true;
-            }
         }
     });
 
