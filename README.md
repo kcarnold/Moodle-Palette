@@ -26,13 +26,4 @@ web-ext build
 
 Side-loading: `about:debugging`, click "This Firefox", "Load temporary add-in".
 
-To sign it (so it stays loaded):
-
-```bash
-source .env
-web-ext sign --channel=unlisted --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET
-```
-
-## TODO
-
-- Move to https://github.com/KonnorRogers/konnors-ninja-keys
+To sign it (so it stays loaded): `./sign.sh`
